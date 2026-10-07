@@ -31,10 +31,11 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      # --- ETAPAS PARA O GITHUB PAGES (WEB) ---
-      - name: Habilitar suporte Web no projeto
-        run: flutter create . --platforms web
+      # --- HABILITAR PLATAFORMAS FALTANTES ---
+      - name: Habilitar plataformas Web e Android
+        run: flutter create . --platforms web,android
 
+      # --- ETAPAS PARA O GITHUB PAGES (WEB) ---
       - name: Gerar Web (Release)
         run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
 
