@@ -1,32 +1,39 @@
 name: Compilar APK Android
+
 on:
-push:
-branches:
-- main
-- master
-workflow_dispatch:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
 jobs:
-build:
-name: Build Android APK
-runs-on: ubuntu-latest
-steps:
-- name: Checkout repository
-uses: actions/checkout@v4
-- name: Setup Java JDK
-uses: actions/setup-java@v4
-with:
-distribution: 'zulu'
-java-version: '17'
-- name: Setup Flutter SDK
-uses: subosito/flutter-action@v2
-with:
-channel: 'stable'
-- name: Install dependencies
-run: flutter pub get
-- name: Build Release APK
-run: flutter build apk --split-per-abi --no-pub
-- name: Upload APK Artifact
-uses: actions/upload-artifact@v4
-with:
-name: app-gasto-familiar-apk
-path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Gerar APK (Release)
+        run: flutter build apk --split-per-abi --no-pub
+
+      - name: Disponibilizar APK para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-familia-apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          
