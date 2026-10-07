@@ -1,10 +1,13 @@
-name: Compilar APK Android
+name: Compilar APK Android e Deploy Web
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -28,6 +31,17 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      # --- ETAPAS PARA O GITHUB PAGES (WEB) ---
+      - name: Gerar Web (Release)
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+
+      - name: Publicar no GitHub Pages
+        uses: PeaceIris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+
+      # --- ETAPAS PARA O APK (ANDROID) ---
       - name: Gerar APK (Release)
         run: flutter build apk --split-per-abi --no-pub
 
