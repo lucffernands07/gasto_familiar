@@ -15,10 +15,9 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Preencha com as credenciais do seu Firebase Console
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'SUA_API_KEY_WEB',
-    appId: '1:170411335258:web:SUA_APP_ID_WEB',
+    apiKey: 'AIzaSyDq_GMcCXsvskqYgaAZ37BeezGV0KqiPyE',
+    appId: '1:170411335258:web:e0586e0828cf1262d5ea85', // Verifique no painel do Firebase se o seu appId web é este mesmo
     messagingSenderId: '170411335258',
     projectId: 'controle-familiar-b9057',
     authDomain: 'controle-familiar-b9057.firebaseapp.com',
@@ -26,8 +25,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'SUA_API_KEY_ANDROID',
-    appId: '1:170411335258:android:SUA_APP_ID_ANDROID',
+    apiKey: 'AIzaSyDq_GMcCXsvskqYgaAZ37BeezGV0KqiPyE',
+    appId: '1:170411335258:android:e0586e0828cf1262d5ea85',
     messagingSenderId: '170411335258',
     projectId: 'controle-familiar-b9057',
   );
