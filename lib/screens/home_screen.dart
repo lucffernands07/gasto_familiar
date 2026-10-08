@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/membro.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/hero_card.dart';
@@ -13,15 +15,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final List<Membro> _membros = const [
-    Membro(nome: 'Ana', saldo: 1500.00, imageUrl: 'https://i.pravatar.cc/150?img=47', borderColor: Color(0xFFFFB7B2)),
-    Membro(nome: 'Pedro', saldo: 1850.75, imageUrl: 'https://i.pravatar.cc/150?img=12', borderColor: Color(0xFFA8DADC)),
-    Membro(nome: 'Lucas', saldo: 1000.00, imageUrl: 'https://i.pravatar.cc/150?img=60', borderColor: Color(0xFFB5EAD7)),
-  ];
+  // ID da coleção/família baseada no usuário atual
+  String get _familyId => _auth.currentUser?.uid ?? 'familia_default';
 
   @override
   Widget build(BuildContext context) {
+    final user = _auth.currentUser;
+    final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'Usuário';
+    final userPhoto = user?.photoURL ?? 'https://i.pravatar.cc/150?img=47';
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6EE),
       drawer: const CustomDrawer(),
@@ -32,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTopBar(context),
+              _buildTopBar(context, userName, userPhoto),
               const SizedBox(height: 20),
               HeroCard(
                 mostrarSaldo: _mostrarSaldo,
@@ -41,7 +46,50 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               _buildSectionHeader(context),
               const SizedBox(height: 12),
-              ..._membros.map((membro) => MembroTile(membro: membro, mostrarSaldo: _mostrarSaldo)),
+              
+              // Leitura em tempo real dos membros gravados no Firestore
+              StreamBuilder<QuerySnapshot>(
+                stream: _db
+                    .collection('families')
+                    .doc(_familyId)
+                    .collection('members')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(color: Color(0xFF4A4A4A)),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'Nenhum membro registrado. Clique em "Atualizar meu Saldo" para começar!',
+                        style: TextStyle(color: Color(0xFF666666)),
+                      ),
+                    );
+                  }
+
+                  final docs = snapshot.data!.docs;
+                  final membros = docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return Membro(
+                      nome: data['nome'] ?? 'Membro',
+                      saldo: (data['saldo'] ?? 0.0).toDouble(),
+                      imageUrl: data['imageUrl'] ?? 'https://i.pravatar.cc/150?img=12',
+                      borderColor: const Color(0xFFA8DADC),
+                    );
+                  }).toList();
+
+                  return Column(
+                    children: membros
+                        .map((membro) => MembroTile(membro: membro, mostrarSaldo: _mostrarSaldo))
+                        .toList(),
+                  );
+                },
+              ),
               const SizedBox(height: 80),
             ],
           ),
@@ -52,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
+  Widget _buildTopBar(BuildContext context, String userName, String photoUrl) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -68,9 +116,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         Row(
           children: [
-            const CircleAvatar(radius: 20, backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=47')),
+            CircleAvatar(radius: 20, backgroundImage: NetworkImage(photoUrl)),
             const SizedBox(width: 6),
-            const Text('Ana', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF333333))),
+            Text(userName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF333333))),
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(Icons.settings_outlined, size: 18, color: Color(0xFF666666)),
@@ -131,20 +179,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _mostrarDialogAtualizarSaldo(BuildContext context) {
+    final saldoController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFFAF6EE),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Atualizar meu Saldo', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const TextField(
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: 'Novo Saldo (R\$)', hintText: 'Ex: 1500,00', border: OutlineInputBorder()),
+        content: TextField(
+          controller: saldoController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Novo Saldo (R\$)', hintText: 'Ex: 1500,00', border: OutlineInputBorder()),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              final val = double.tryParse(saldoController.text.replaceAll(',', '.'));
+              if (val != null) {
+                final user = _auth.currentUser;
+                final uid = user?.uid ?? 'anonimo';
+                final nome = user?.displayName ?? user?.email?.split('@')[0] ?? 'Membro';
+                final photo = user?.photoURL ?? 'https://i.pravatar.cc/150?img=12';
+
+                // Grava no Firestore
+                await _db
+                    .collection('families')
+                    .doc(_familyId)
+                    .collection('members')
+                    .doc(uid)
+                    .set({
+                  'nome': nome,
+                  'saldo': val,
+                  'imageUrl': photo,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
             child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
           ),
@@ -154,32 +228,95 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _mostrarModalLancamento(BuildContext context) {
+    final descController = TextEditingController();
+    final valorController = TextEditingController();
+    String tipo = 'despesa';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFFFAF6EE),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Novo Lançamento / Editar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            const TextField(decoration: InputDecoration(labelText: 'Descrição', hintText: 'Ex: Mercado, Luz, Salário', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            const TextField(keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder())),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB7B2), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                child: const Text('Confirmar', style: TextStyle(fontSize: 16, color: Colors.black87, fontWeight: FontWeight.bold)),
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            top: 24.0,
+            left: 24.0,
+            right: 24.0,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Novo Lançamento / Editar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: 'Descrição', hintText: 'Ex: Mercado, Luz, Salário', border: OutlineInputBorder()),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: valorController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Despesa'),
+                      value: 'despesa',
+                      groupValue: tipo,
+                      onChanged: (val) => setModalState(() => tipo = val!),
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Receita'),
+                      value: 'receita',
+                      groupValue: tipo,
+                      onChanged: (val) => setModalState(() => tipo = val!),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final amount = double.tryParse(valorController.text.replaceAll(',', '.'));
+                    if (descController.text.isNotEmpty && amount != null) {
+                      final user = _auth.currentUser;
+                      
+                      // Grava o lançamento no Firestore
+                      await _db
+                          .collection('families')
+                          .doc(_familyId)
+                          .collection('transactions')
+                          .add({
+                        'descricao': descController.text,
+                        'valor': amount,
+                        'tipo': tipo,
+                        'userId': user?.uid,
+                        'createdAt': FieldValue.serverTimestamp(),
+                      });
+
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFB7B2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Confirmar', style: TextStyle(fontSize: 16, color: Colors.black87, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
