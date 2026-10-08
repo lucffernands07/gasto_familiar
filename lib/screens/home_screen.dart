@@ -56,9 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
+                    return const Padding(
                       padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(color: Color(0xFF4A4A4A)),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Color(0xFF4A4A4A)),
+                      ),
                     );
                   }
 
