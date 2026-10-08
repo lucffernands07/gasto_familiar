@@ -1,4 +1,4 @@
-name: Compilar APK Android e Deploy Web
+name: Compilar APK Android
 
 on:
   push:
@@ -31,27 +31,17 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      # --- HABILITAR PLATAFORMAS FALTANTES ---
-      - name: Habilitar plataformas Web e Android
-        run: flutter create . --platforms web,android
-
-      # --- ETAPAS PARA O GITHUB PAGES (WEB) ---
-      - name: Gerar Web (Release)
-        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
-
-      - name: Publicar no GitHub Pages
-        uses: PeaceIris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+      # --- HABILITAR PLATAFORMA ANDROID ---
+      - name: Habilitar plataforma Android
+        run: flutter create . --platforms android
 
       # --- ETAPAS PARA O APK (ANDROID) ---
       - name: Gerar APK (Release)
-        run: flutter build apk --split-per-abi --no-pub
+        run: flutter build apk --release
 
       - name: Disponibilizar APK para Download
         uses: actions/upload-artifact@v4
         with:
           name: app-familia-apk
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           
