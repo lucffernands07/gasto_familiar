@@ -115,6 +115,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
     final photoUrl = user?.photoURL;
     final nomeUsuario = user?.displayName ?? 'Usuário';
     final fallbackLetter = nomeUsuario.isNotEmpty ? nomeUsuario[0].toUpperCase() : 'U';
+    final userId = user?.uid ?? '';
+
+    // Define o ID alvo da família: se tiver um admin compartilhado usa ele, senão assume o próprio UID do dono
+    final targetFamilyId = _sharedFamilyAdminUid ?? userId;
 
     return Drawer(
       backgroundColor: const Color(0xFFFAF6EE),
@@ -190,19 +194,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
               widget.onFamilyChanged();
             },
           ),
-          // Alternar para Conta Família Compartilhada (se o usuário tiver recebido/aceitado um convite)
-          if (_sharedFamilyAdminUid != null)
-            ListTile(
-              leading: Icon(Icons.people, color: _activeMode != 'individual' ? Colors.pink : Colors.grey),
-              title: const Text('Conta Família Compartilhada'),
-              trailing: _activeMode != 'individual' ? const Icon(Icons.check, color: Colors.pink) : null,
-              onTap: () async {
-                await FamilyService().setActiveMode(_sharedFamilyAdminUid!);
-                if (context.mounted) Navigator.pop(context);
-                _loadDrawerState();
-                widget.onFamilyChanged();
-              },
-            ),
+          // Alternar para Conta Família Compartilhada (Exibido para qualquer utilizador que tenha um banco familiar associado)
+          ListTile(
+            leading: Icon(Icons.people, color: _activeMode != 'individual' ? Colors.pink : Colors.grey),
+            title: const Text('Conta Família Compartilhada'),
+            trailing: _activeMode != 'individual' ? const Icon(Icons.check, color: Colors.pink) : null,
+            onTap: () async {
+              await FamilyService().setActiveMode(targetFamilyId);
+              if (context.mounted) Navigator.pop(context);
+              _loadDrawerState();
+              widget.onFamilyChanged();
+            },
+          ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.person_add_alt_outlined),
