@@ -64,7 +64,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6EE),
-      drawer: const CustomDrawer(),
+      // Atualizado para receber o callback e atualizar o painel ao trocar de conta no menu
+      drawer: CustomDrawer(
+        onFamilyChanged: () {
+          _carregarFamiliasEUrl();
+        },
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
