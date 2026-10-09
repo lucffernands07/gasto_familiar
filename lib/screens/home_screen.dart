@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import '../models/membro.dart';
+import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/membro_tile.dart';
@@ -17,9 +21,41 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  String _familyId = 'familia_default';
 
-  // ID da coleção/família baseada no usuário atual
-  String get _familyId => _auth.currentUser?.uid ?? 'familia_default';
+  @override
+  void initState() {
+    super.initState();
+    _carregarFamiliasEUrl();
+  }
+
+  // Verifica se veio um convite na URL e carrega o ID correto da família
+  Future<void> _carregarFamiliasEUrl() async {
+    if (kIsWeb) {
+      try {
+        final uri = Uri.parse(html.window.location.href);
+        final familyAdminUid = uri.queryParameters['family'];
+        if (familyAdminUid != null && familyAdminUid.isNotEmpty) {
+          // Vincula o usuário ao banco de dados do administrador que convidou
+          await FamilyService().joinFamily(familyAdminUid);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Você entrou na Conta Família com sucesso!')),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Erro ao processar URL de convite: $e');
+      }
+    }
+
+    // Obtém o ID ativo (seja o privado ou o da família compartilhada)
+    final activeId = await FamilyService().getActiveFamilyId();
+    setState(() {
+      _familyId = activeId;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildSectionHeader(context),
               const SizedBox(height: 12),
               
-              // Leitura em tempo real dos membros gravados no Firestore
+              // Leitura em tempo real dos membros gravados no Firestore usando o _familyId ativo
               StreamBuilder<QuerySnapshot>(
                 stream: _db
                     .collection('families')
@@ -118,7 +154,6 @@ class _HomeScreenState extends State<HomeScreen> {
           'Gasto Familiar',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5),
         ),
-        // Engrenagem removida com sucesso. Apenas a foto/início permanece:
         CircleAvatar(
           radius: 20,
           backgroundColor: const Color(0xFFFFCBDD),
@@ -205,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final nome = user?.displayName ?? user?.email?.split('@')[0] ?? 'Membro';
                 final photo = user?.photoURL ?? 'https://i.pravatar.cc/150?img=12';
 
+                // Grava no Firestore usando a família ativa (_familyId)
                 await _db
                     .collection('families')
                     .doc(_familyId)
@@ -293,6 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (descController.text.isNotEmpty && amount != null) {
                       final user = _auth.currentUser;
                       
+                      // Grava o lançamento no Firestore usando o _familyId ativo
                       await _db
                           .collection('families')
                           .doc(_familyId)
