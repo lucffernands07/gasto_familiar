@@ -10,8 +10,8 @@ class CustomDrawer extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     final nomeUsuario = user?.displayName ?? 'Um membro da família';
     
-    // Substitua pelo link real do seu app web quando hospedar (ex: Vercel, Firebase Hosting, etc)
-    const String linkAppWeb = 'https://seu-app-gasto-familiar.web.app'; 
+    // Link correto do seu GitHub Pages
+    const String linkAppWeb = 'https://lucffernands07.github.io/gasto_familiar/'; 
 
     final assunto = Uri.encodeComponent('Convite para participar do Gasto Familiar');
     final corpo = Uri.encodeComponent(
@@ -122,7 +122,7 @@ class CustomDrawer extends StatelessWidget {
             title: const Text('Convidar Familiar'),
             onTap: () {
               Navigator.pop(context);
-              _enviarConvite(context); // Aciona a abertura do e-mail com o link
+              _enviarConvite(context);
             },
           ),
           ListTile(
