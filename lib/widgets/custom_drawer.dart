@@ -117,9 +117,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
     final fallbackLetter = nomeUsuario.isNotEmpty ? nomeUsuario[0].toUpperCase() : 'U';
     final userId = user?.uid ?? '';
 
-    // Define o ID alvo da família: se tiver um admin compartilhado usa ele, senão assume o próprio UID do dono
-    final targetFamilyId = _sharedFamilyAdminUid ?? userId;
-
     return Drawer(
       backgroundColor: const Color(0xFFFAF6EE),
       child: ListView(
@@ -194,12 +191,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
               widget.onFamilyChanged();
             },
           ),
-          // Alternar para Conta Família Compartilhada (Exibido para qualquer utilizador que tenha um banco familiar associado)
+          // Alternar para Conta Família Compartilhada (Usa o admin compartilhado se houver, senão o UID do próprio utilizador logado)
           ListTile(
             leading: Icon(Icons.people, color: _activeMode != 'individual' ? Colors.pink : Colors.grey),
             title: const Text('Conta Família Compartilhada'),
             trailing: _activeMode != 'individual' ? const Icon(Icons.check, color: Colors.pink) : null,
             onTap: () async {
+              final targetFamilyId = _sharedFamilyAdminUid ?? userId;
               await FamilyService().setActiveMode(targetFamilyId);
               if (context.mounted) Navigator.pop(context);
               _loadDrawerState();
