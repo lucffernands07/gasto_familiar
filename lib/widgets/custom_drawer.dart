@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
+
+  Future<void> _enviarConvite(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final nomeUsuario = user?.displayName ?? 'Um membro da família';
+    
+    // Substitua pelo link real do seu app web quando hospedar (ex: Vercel, Firebase Hosting, etc)
+    const String linkAppWeb = 'https://seu-app-gasto-familiar.web.app'; 
+
+    final assunto = Uri.encodeComponent('Convite para participar do Gasto Familiar');
+    final corpo = Uri.encodeComponent(
+      'Olá!\n\n$nomeUsuario está te convidando para participar do controle de gastos da família no app Gasto Familiar.\n\n'
+      'Acesse o aplicativo web pelo link abaixo para acompanhar os mesmos gastos:\n$linkAppWeb\n\n'
+      'Basta fazer o login com o seu e-mail!'
+    );
+
+    final Uri uri = Uri(
+      scheme: 'mailto',
+      path: '', 
+      query: 'subject=$assunto&body=$corpo',
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o aplicativo de e-mail.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +120,10 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.person_add_alt_outlined),
             title: const Text('Convidar Familiar'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pop(context);
+              _enviarConvite(context); // Aciona a abertura do e-mail com o link
+            },
           ),
           ListTile(
             leading: const Icon(Icons.settings_outlined),
