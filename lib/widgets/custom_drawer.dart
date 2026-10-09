@@ -113,10 +113,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final photoUrl = user?.photoURL;
-    final fallbackLetter = (user?.displayName != null && user!.displayName!.isNotEmpty)
-        ? user.displayName![0].toUpperCase()
-        : 'U';
-    final isOwner = _activeFamilyId == user?.uid;
+    final nomeUsuario = user?.displayName ?? 'Usuário';
+    final fallbackLetter = nomeUsuario.isNotEmpty ? nomeUsuario[0].toUpperCase() : 'U';
 
     return Drawer(
       backgroundColor: const Color(0xFFFAF6EE),
@@ -127,52 +125,45 @@ class _CustomDrawerState extends State<CustomDrawer> {
             decoration: const BoxDecoration(
               color: Color(0xFFFFCBDD),
             ),
-            child: FutureBuilder<Map<String, dynamic>?>(
-              future: FamilyService().getFamilyDetails(_activeFamilyId),
-              builder: (context, snapshot) {
-                final familyName = snapshot.data?['familyName'] ?? (isOwner ? 'Meus Gastos (Individual)' : 'Conta Família');
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('families')
+                  .doc(_activeFamilyId)
+                  .collection('members')
+                  .snapshots(),
+              builder: (context, memberSnapshot) {
+                int totalMembros = 0;
+                if (memberSnapshot.hasData) {
+                  totalMembros = memberSnapshot.data!.docs.length;
+                }
 
-                return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('families')
-                      .doc(_activeFamilyId)
-                      .collection('members')
-                      .snapshots(),
-                  builder: (context, memberSnapshot) {
-                    int totalMembros = 0;
-                    if (memberSnapshot.hasData) {
-                      totalMembros = memberSnapshot.data!.docs.length;
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: Colors.white,
-                          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                          child: photoUrl == null
-                              ? Text(
-                                  fallbackLetter,
-                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          familyName,
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                        ),
-                        Text(
-                          _activeMode == 'individual'
-                              ? 'Modo: Individual'
-                              : '$totalMembros ${totalMembros == 1 ? 'membro conectado' : 'membros conectados'}',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
-                        ),
-                      ],
-                    );
-                  },
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.white,
+                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                      child: photoUrl == null
+                          ? Text(
+                              fallbackLetter,
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      nomeUsuario,
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                    ),
+                    Text(
+                      _activeMode == 'individual'
+                          ? 'Modo: Individual'
+                          : '$totalMembros ${totalMembros == 1 ? 'membro conectado' : 'membros conectados'}',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
+                    ),
+                  ],
                 );
               },
             ),
@@ -212,16 +203,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 widget.onFamilyChanged();
               },
             ),
-          // Apenas o dono da conta principal pode nomear o seu banco compartilhado
-          if (isOwner)
-            ListTile(
-              leading: const Icon(Icons.edit_note),
-              title: const Text('Nomear Banco da Família'),
-              onTap: () {
-                Navigator.pop(context);
-                _mostrarDialogEditarNomeBanco(context);
-              },
-            ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.person_add_alt_outlined),
@@ -234,7 +215,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Configurações'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pop(context);
+              _mostrarDialogEditarNomeBanco(context);
+            },
           ),
           const Divider(),
           ListTile(
