@@ -92,12 +92,22 @@ class FamilyService {
     return doc.data();
   }
 
-  // Atualizar o nome personalizado do banco compartilhado (Apenas Administrador)
+  // Atualizar o nome personalizado do banco compartilhado e assegurar que o admin é membro do seu próprio banco
   Future<void> updateFamilyName(String familyId, String newName) async {
     await _db.collection('families').doc(familyId).set({
       'familyName': newName,
       'adminUid': familyId,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && familyId == user.uid) {
+      await _db.collection('families').doc(familyId).collection('members').doc(user.uid).set({
+        'nome': user.displayName ?? user.email?.split('@')[0] ?? 'Membro',
+        'email': user.email,
+        'imageUrl': user.photoURL ?? 'https://i.pravatar.cc/150?img=12',
+        'joinedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
   }
 }
