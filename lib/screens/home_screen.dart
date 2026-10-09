@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/membro.dart';
 import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
@@ -32,14 +33,28 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _carregarFamiliasEUrl() async {
     if (kIsWeb) {
       try {
-        final familyAdminUid = Uri.base.queryParameters['family'];
+        final uri = Uri.base;
+        final familyAdminUid = uri.queryParameters['family'];
+        
         if (familyAdminUid != null && familyAdminUid.isNotEmpty) {
-          // Vincula o usuário ao banco de dados do administrador que convidou
-          await FamilyService().joinFamily(familyAdminUid);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Você entrou na Conta Família com sucesso!')),
-            );
+          final prefs = await SharedPreferences.getInstance();
+          final user = _auth.currentUser;
+          
+          if (user != null) {
+            final inviteKey = 'processed_invite_${user.uid}_$familyAdminUid';
+            final alreadyProcessed = prefs.getBool(inviteKey) ?? false;
+
+            // Processa o convite apenas se ainda não tiver sido processado para este usuário
+            if (!alreadyProcessed) {
+              await FamilyService().joinFamily(familyAdminUid);
+              await prefs.setBool(inviteKey, true);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Você entrou na Conta Família com sucesso!')),
+                );
+              }
+            }
           }
         }
       } catch (e) {
