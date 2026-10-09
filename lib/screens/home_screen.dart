@@ -143,31 +143,55 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopBar(BuildContext context, String? photoUrl, String fallbackLetter) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu_rounded, size: 32, color: Color(0xFF333333)),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
-          ),
-        ),
-        const Text(
-          'Gasto Familiar',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5),
-        ),
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: const Color(0xFFFFCBDD),
-          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-          child: photoUrl == null
-              ? Text(
-                  fallbackLetter,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                )
-              : null,
-        ),
-      ],
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: FamilyService().getFamilyDetails(_familyId),
+      builder: (context, snapshot) {
+        final familyData = snapshot.data;
+        final customFamilyName = familyData?['familyName'];
+        
+        // Se o _familyId for igual ao UID do usuário logado, é o modo individual
+        final isIndividual = _familyId == _auth.currentUser?.uid;
+        final tituloApp = isIndividual ? 'Meus Gastos' : 'Gastos Familiares';
+        final subtituloBanco = (!isIndividual && customFamilyName != null && customFamilyName.isNotEmpty)
+            ? customFamilyName
+            : null;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Builder(
+              builder: (ctx) => IconButton(
+                icon: const Icon(Icons.menu_rounded, size: 32, color: Color(0xFF333333)),
+                onPressed: () => Scaffold.of(ctx).openDrawer(),
+              ),
+            ),
+            Column(
+              children: [
+                Text(
+                  tituloApp,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5),
+                ),
+                if (subtituloBanco != null)
+                  Text(
+                    subtituloBanco,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF666666)),
+                  ),
+              ],
+            ),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFFFFCBDD),
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Text(
+                      fallbackLetter,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                    )
+                  : null,
+            ),
+          ],
+        );
+      },
     );
   }
 
