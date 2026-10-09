@@ -1,42 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/family_service.dart';
 
-class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({super.key});
+class CustomDrawer extends StatefulWidget {
+  final VoidCallback onFamilyChanged;
+
+  const CustomDrawer({super.key, required this.onFamilyChanged});
+
+  @override
+  State<CustomDrawer> createState() => _CustomDrawerState();
+}
+
+class _CustomDrawerState extends State<CustomDrawer> {
+  String _activeFamilyId = 'familia_default';
+  String _activeMode = 'individual';
+  String? _sharedFamilyAdminUid;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDrawerState();
+  }
+
+  Future<void> _loadDrawerState() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final familyId = await FamilyService().getActiveFamilyId();
+    final mode = await FamilyService().getActiveMode();
+    
+    final prefs = await SharedPreferences.getInstance();
+    final sharedAdmin = prefs.getString('shared_family_id_${user.uid}');
+
+    if (mounted) {
+      setState(() {
+        _activeFamilyId = familyId;
+        _activeMode = mode;
+        _sharedFamilyAdminUid = sharedAdmin;
+      });
+    }
+  }
 
   Future<void> _enviarConvite(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     final nomeUsuario = user?.displayName ?? 'Um membro da família';
     final meuUid = user?.uid ?? '';
     
-    // Link do seu GitHub Pages enviando o seu UID como parâmetro de convite
     const String baseUrl = 'https://lucffernands07.github.io/gasto_familiar/';
     final String linkComConvite = '$baseUrl?family=$meuUid';
 
     final assunto = Uri.encodeComponent('Convite Gasto Familiar ❤️📊');
     final corpo = Uri.encodeComponent(
       'Olá! Tudo bem?\n\n'
-      '✨ O(A) $nomeUsuario está te convidando para participar do nosso painel de controle financeiro!\n\n'
-      '━━━━━━━━━━━━━━━━━━━━━━━\n'
-      '📊 O QUE VOCÊ VAI PODER FAZER:\n'
-      '• Acompanhar saldos e despesas da casa\n'
-      '• Registrar novos lançamentos em tempo real\n'
-      '• Manter o orçamento familiar sincronizado\n'
-      '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
-      '🔗 Para acessar o painel compartilhado e entrar na família, clique no link abaixo:\n'
+      '✨ O(A) $nomeUsuario está te convidando para participar do nosso painel de controle financeiro compartilhado!\n\n'
+      '🔗 Para acessar o painel e entrar na família, clique no link abaixo:\n'
       'Convite Gasto Familiar ❤️📊: $linkComConvite\n\n'
-      '💡 Dica: Basta fazer o login usando a sua conta de e-mail e você já estará conectado automaticamente!\n\n'
-      'Te esperamos lá! 🚀'
+      '💡 Basta fazer o login usando a sua conta de e-mail!'
     );
 
-    final Uri uri = Uri(
-      scheme: 'mailto',
-      path: '', 
-      query: 'subject=$assunto&body=$corpo',
-    );
-
+    final Uri uri = Uri(scheme: 'mailto', path: '', query: 'subject=$assunto&body=$corpo');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
@@ -48,14 +73,50 @@ class CustomDrawer extends StatelessWidget {
     }
   }
 
+  void _mostrarDialogEditarNomeBanco(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final nomeController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFAF6EE),
+        title: const Text('Nome do Banco Familiar', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: nomeController,
+          decoration: const InputDecoration(
+            labelText: 'Ex: Família Fernandes ou Lu & Nanda',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nomeController.text.isNotEmpty) {
+                await FamilyService().updateFamilyName(user.uid, nomeController.text);
+                if (context.mounted) Navigator.pop(context);
+                _loadDrawerState();
+                widget.onFamilyChanged();
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final familyId = user?.uid ?? 'familia_default';
     final photoUrl = user?.photoURL;
     final fallbackLetter = (user?.displayName != null && user!.displayName!.isNotEmpty)
         ? user.displayName![0].toUpperCase()
         : 'U';
+    final isOwner = _activeFamilyId == user?.uid;
 
     return Drawer(
       backgroundColor: const Color(0xFFFAF6EE),
@@ -66,43 +127,52 @@ class CustomDrawer extends StatelessWidget {
             decoration: const BoxDecoration(
               color: Color(0xFFFFCBDD),
             ),
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('families')
-                  .doc(familyId)
-                  .collection('members')
-                  .snapshots(),
+            child: FutureBuilder<Map<String, dynamic>?>(
+              future: FamilyService().getFamilyDetails(_activeFamilyId),
               builder: (context, snapshot) {
-                int totalMembros = 0;
-                if (snapshot.hasData) {
-                  totalMembros = snapshot.data!.docs.length;
-                }
+                final familyName = snapshot.data?['familyName'] ?? (isOwner ? 'Meus Gastos (Individual)' : 'Conta Família');
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.white,
-                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                      child: photoUrl == null
-                          ? Text(
-                              fallbackLetter,
-                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      user?.displayName ?? 'Família',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                    ),
-                    Text(
-                      '$totalMembros ${totalMembros == 1 ? 'membro conectado' : 'membros conectados'}',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF666666)),
-                    ),
-                  ],
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('families')
+                      .doc(_activeFamilyId)
+                      .collection('members')
+                      .snapshots(),
+                  builder: (context, memberSnapshot) {
+                    int totalMembros = 0;
+                    if (memberSnapshot.hasData) {
+                      totalMembros = memberSnapshot.data!.docs.length;
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: Colors.white,
+                          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                          child: photoUrl == null
+                              ? Text(
+                                  fallbackLetter,
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          familyName,
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                        ),
+                        Text(
+                          _activeMode == 'individual'
+                              ? 'Modo: Individual'
+                              : '$totalMembros ${totalMembros == 1 ? 'membro conectado' : 'membros conectados'}',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -112,21 +182,46 @@ class CustomDrawer extends StatelessWidget {
             title: const Text('Início'),
             onTap: () => Navigator.pop(context),
           ),
-          ListTile(
-            leading: const Icon(Icons.people_outline),
-            title: const Text('Membros da Família'),
-            onTap: () {},
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: Text('Gerenciar Contas / Bancos', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
           ),
+          // Alternar para Modo Individual
           ListTile(
-            leading: const Icon(Icons.category_outlined),
-            title: const Text('Categorias'),
-            onTap: () {},
+            leading: Icon(Icons.person, color: _activeMode == 'individual' ? Colors.blue : Colors.grey),
+            title: const Text('Meus Gastos (Individual)'),
+            trailing: _activeMode == 'individual' ? const Icon(Icons.check, color: Colors.blue) : null,
+            onTap: () async {
+              await FamilyService().setActiveMode('individual');
+              if (context.mounted) Navigator.pop(context);
+              _loadDrawerState();
+              widget.onFamilyChanged();
+            },
           ),
-          ListTile(
-            leading: const Icon(Icons.bar_chart_outlined),
-            title: const Text('Relatórios & Extrato'),
-            onTap: () {},
-          ),
+          // Alternar para Conta Família Compartilhada (se o usuário tiver recebido/aceitado um convite)
+          if (_sharedFamilyAdminUid != null)
+            ListTile(
+              leading: Icon(Icons.people, color: _activeMode != 'individual' ? Colors.pink : Colors.grey),
+              title: const Text('Conta Família Compartilhada'),
+              trailing: _activeMode != 'individual' ? const Icon(Icons.check, color: Colors.pink) : null,
+              onTap: () async {
+                await FamilyService().setActiveMode(_sharedFamilyAdminUid!);
+                if (context.mounted) Navigator.pop(context);
+                _loadDrawerState();
+                widget.onFamilyChanged();
+              },
+            ),
+          // Apenas o dono da conta principal pode nomear o seu banco compartilhado
+          if (isOwner)
+            ListTile(
+              leading: const Icon(Icons.edit_note),
+              title: const Text('Nomear Banco da Família'),
+              onTap: () {
+                Navigator.pop(context);
+                _mostrarDialogEditarNomeBanco(context);
+              },
+            ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.person_add_alt_outlined),
