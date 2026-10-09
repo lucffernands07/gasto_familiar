@@ -24,8 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
-    final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'Usuário';
-    final userPhoto = user?.photoURL ?? 'https://i.pravatar.cc/150?img=47';
+    final userPhoto = user?.photoURL;
+    final fallbackLetter = (user?.displayName != null && user!.displayName!.isNotEmpty)
+        ? user.displayName![0].toUpperCase()
+        : (user?.email != null && user!.email!.isNotEmpty ? user.email![0].toUpperCase() : 'U');
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6EE),
@@ -37,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTopBar(context, userName, userPhoto),
+              _buildTopBar(context, userPhoto, fallbackLetter),
               const SizedBox(height: 20),
               HeroCard(
                 mostrarSaldo: _mostrarSaldo,
@@ -102,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopBar(BuildContext context, String userName, String photoUrl) {
+  Widget _buildTopBar(BuildContext context, String? photoUrl, String fallbackLetter) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -117,16 +119,22 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5),
         ),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(radius: 20, backgroundImage: NetworkImage(photoUrl)),
-            const SizedBox(width: 6),
-            Text(userName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF333333))),
-            const SizedBox(width: 4),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFFFFCBDD),
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Text(
+                      fallbackLetter,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                    )
+                  : null,
+            ),
             IconButton(
-              icon: const Icon(Icons.settings_outlined, size: 18, color: Color(0xFF666666)),
+              icon: const Icon(Icons.settings_outlined, size: 20, color: Color(0xFF666666)),
               onPressed: () {},
-              constraints: const BoxConstraints(),
-              padding: EdgeInsets.zero,
             ),
           ],
         ),
