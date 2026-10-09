@@ -89177,21 +89177,24 @@ case 2:return A.K(o.at(-1),r)}})
 return A.M($async$wh,r)}}
 A.KG.prototype={
 ta(a){return this.a8I(a)},
-a8I(a){var s=0,r=A.N(t.H),q,p,o,n,m
+a8I(a){var s=0,r=A.N(t.H),q,p,o,n,m,l
 var $async$ta=A.J(function(b,c){if(b===1)return A.K(c,r)
-for(;;)switch(s){case 0:n=$.bN
-m=(n==null?$.bN=$.e5():n).eh("[DEFAULT]")
-A.c5(m,$.ei(),!0)
-q=A.tY(new A.d5(m)).giQ()
-p=q==null?null:q.a.c.a.c
+for(;;)switch(s){case 0:m=$.bN
+l=(m==null?$.bN=$.e5():m).eh("[DEFAULT]")
+A.c5(l,$.ei(),!0)
+q=A.tY(new A.d5(l)).giQ()
+m=q==null
+p=m?null:q.a.c.a.c
 if(p==null)p="Um membro da fam\xedlia"
-o=A.YH(null,"","subject="+A.x8(2,"Convite para participar do Gasto Familiar",B.ac,!1)+"&body="+A.x8(2,"Ol\xe1!\n\n"+p+" est\xe1 te convidando para participar do controle de gastos da fam\xedlia no app Gasto Familiar.\n\nAcesse o aplicativo web pelo link abaixo para acompanhar os mesmos gastos:\nhttps://lucffernands07.github.io/gasto_familiar/\n\nBasta fazer o login com o seu e-mail!",B.ac,!1),null,"mailto")
+o=m?null:q.a.c.a.a
+if(o==null)o=""
+n=A.YH(null,"","subject="+A.x8(2,"Convite para participar do Gasto Familiar",B.ac,!1)+"&body="+A.x8(2,"Ol\xe1!\n\n"+p+" est\xe1 te convidando para participar do controle de gastos da fam\xedlia no app Gasto Familiar.\n\nAcesse o aplicativo pelo link abaixo para entrar no mesmo painel de gastos:\n"+("https://lucffernands07.github.io/gasto_familiar/?family="+o)+"\n\nBasta fazer o login com o seu e-mail!",B.ac,!1),null,"mailto")
 s=5
-return A.O(A.aAe(o),$async$ta)
+return A.O(A.aAe(n),$async$ta)
 case 5:s=c?2:4
 break
 case 2:s=6
-return A.O(A.aAw(o),$async$ta)
+return A.O(A.aAw(n),$async$ta)
 case 6:s=3
 break
 case 4:if(a.e!=null)a.ak(t.Pu).f.Cv(B.QJ)
