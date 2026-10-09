@@ -15,14 +15,20 @@ class FamilyService {
     if (user == null) return 'familia_default';
 
     final prefs = await SharedPreferences.getInstance();
-    // Verifica se o usuário escolheu o modo 'individual' ou se está numa família compartilhada
+    // Verifica se o usuário escolheu explicitamente um modo ativo ('individual' ou o uid do admin)
     String? modoAtivo = prefs.getString('modo_ativo_${user.uid}');
 
+    // Se explicitamente configurado como 'individual', retorna o ID privado do usuário
     if (modoAtivo == 'individual') {
-      return user.uid; // Força o uso do espaço privado
+      return user.uid; 
     }
     
-    // Se não tiver modo definido mas tiver uma família compartilhada vinculada, usa ela por padrão, senão o próprio UID
+    // Se houver um modo ativo salvo que seja o ID da família, usa ele
+    if (modoAtivo != null && modoAtivo.isNotEmpty) {
+      return modoAtivo;
+    }
+    
+    // Fallback: Se não houver modo definido, verifica se tem uma família compartilhada vinculada, senão usa o próprio UID
     String? sharedFamilyId = prefs.getString('shared_family_id_${user.uid}');
     return sharedFamilyId ?? user.uid;
   }
@@ -51,9 +57,15 @@ class FamilyService {
     if (user == null) return;
 
     final prefs = await SharedPreferences.getInstance();
-    // Guarda o vínculo com a família e define como modo ativo automaticamente
+    
+    // Salva o vínculo da família compartilhada
     await prefs.setString('shared_family_id_${user.uid}', adminUid);
-    await prefs.setString('modo_ativo_${user.uid}', adminUid);
+    
+    // Define como ativo apenas se o usuário ainda não tiver definido uma preferência manual anterior
+    String? modoAtual = prefs.getString('modo_ativo_${user.uid}');
+    if (modoAtual == null) {
+      await prefs.setString('modo_ativo_${user.uid}', adminUid);
+    }
 
     // Regista o usuário atual como membro na coleção da família do administrador
     await _db.collection('families').doc(adminUid).collection('members').doc(user.uid).set({
