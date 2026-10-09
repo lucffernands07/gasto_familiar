@@ -15,11 +15,20 @@ class CustomDrawer extends StatelessWidget {
     const String baseUrl = 'https://lucffernands07.github.io/gasto_familiar/';
     final String linkComConvite = '$baseUrl?family=$meuUid';
 
-    final assunto = Uri.encodeComponent('Convite para participar do Gasto Familiar');
+    final assunto = Uri.encodeComponent('Convite Gasto Familiar ❤️📊');
     final corpo = Uri.encodeComponent(
-      'Olá!\n\n$nomeUsuario está te convidando para participar do controle de gastos da família no app Gasto Familiar.\n\n'
-      'Acesse o aplicativo pelo link abaixo para entrar no mesmo painel de gastos:\n$linkComConvite\n\n'
-      'Basta fazer o login com o seu e-mail!'
+      'Olá! Tudo bem?\n\n'
+      '✨ O(A) $nomeUsuario está te convidando para participar do nosso painel de controle financeiro!\n\n'
+      '━━━━━━━━━━━━━━━━━━━━━━━\n'
+      '📊 O QUE VOCÊ VAI PODER FAZER:\n'
+      '• Acompanhar saldos e despesas da casa\n'
+      '• Registrar novos lançamentos em tempo real\n'
+      '• Manter o orçamento familiar sincronizado\n'
+      '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+      '🔗 Para acessar o painel compartilhado e entrar na família, clique no link abaixo:\n'
+      'Convite Gasto Familiar ❤️📊: $linkComConvite\n\n'
+      '💡 Dica: Basta fazer o login usando a sua conta de e-mail e você já estará conectado automaticamente!\n\n'
+      'Te esperamos lá! 🚀'
     );
 
     final Uri uri = Uri(
