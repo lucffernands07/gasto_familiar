@@ -89348,7 +89348,7 @@ p=m?null:q.a.c.a.c
 if(p==null)p="Um membro da fam\xedlia"
 o=m?null:q.a.c.a.a
 if(o==null)o=""
-n=A.YJ(null,"","subject="+A.x9(2,"Convite para participar do Gasto Familiar",B.aa,!1)+"&body="+A.x9(2,"Ol\xe1!\n\n"+p+" est\xe1 te convidando para participar do controle de gastos da fam\xedlia no app Gasto Familiar.\n\nAcesse o aplicativo pelo link abaixo para entrar no mesmo painel de gastos:\n"+("https://lucffernands07.github.io/gasto_familiar/?family="+o)+"\n\nBasta fazer o login com o seu e-mail!",B.aa,!1),null,"mailto")
+n=A.YJ(null,"","subject="+A.x9(2,"Convite Gasto Familiar \u2764\ufe0f\ud83d\udcca",B.aa,!1)+"&body="+A.x9(2,"Ol\xe1! Tudo bem?\n\n\u2728 O(A) "+p+" est\xe1 te convidando para participar do nosso painel de controle financeiro!\n\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\ud83d\udcca O QUE VOC\xca VAI PODER FAZER:\n\u2022 Acompanhar saldos e despesas da casa\n\u2022 Registrar novos lan\xe7amentos em tempo real\n\u2022 Manter o or\xe7amento familiar sincronizado\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n\ud83d\udd17 Para acessar o painel compartilhado e entrar na fam\xedlia, clique no link abaixo:\nConvite Gasto Familiar \u2764\ufe0f\ud83d\udcca: "+("https://lucffernands07.github.io/gasto_familiar/?family="+o)+"\n\n\ud83d\udca1 Dica: Basta fazer o login usando a sua conta de e-mail e voc\xea j\xe1 estar\xe1 conectado automaticamente!\n\nTe esperamos l\xe1! \ud83d\ude80",B.aa,!1),null,"mailto")
 s=5
 return A.O(A.aAq(n),$async$te)
 case 5:s=c?2:4
