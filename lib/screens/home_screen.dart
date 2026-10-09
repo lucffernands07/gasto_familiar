@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import '../models/membro.dart';
 import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
@@ -30,12 +28,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _carregarFamiliasEUrl();
   }
 
-  // Verifica se veio um convite na URL e carrega o ID correto da família
+  // Verifica se veio um convite na URL usando Uri.base (compatível com Web e Android)
   Future<void> _carregarFamiliasEUrl() async {
     if (kIsWeb) {
       try {
-        final uri = Uri.parse(html.window.location.href);
-        final familyAdminUid = uri.queryParameters['family'];
+        final familyAdminUid = Uri.base.queryParameters['family'];
         if (familyAdminUid != null && familyAdminUid.isNotEmpty) {
           // Vincula o usuário ao banco de dados do administrador que convidou
           await FamilyService().joinFamily(familyAdminUid);
@@ -240,7 +237,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 final nome = user?.displayName ?? user?.email?.split('@')[0] ?? 'Membro';
                 final photo = user?.photoURL ?? 'https://i.pravatar.cc/150?img=12';
 
-                // Grava no Firestore usando a família ativa (_familyId)
                 await _db
                     .collection('families')
                     .doc(_familyId)
@@ -329,7 +325,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (descController.text.isNotEmpty && amount != null) {
                       final user = _auth.currentUser;
                       
-                      // Grava o lançamento no Firestore usando o _familyId ativo
                       await _db
                           .collection('families')
                           .doc(_familyId)
