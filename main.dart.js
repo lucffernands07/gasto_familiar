@@ -89183,7 +89183,7 @@ A.cd(m,$.ei(),!0)
 q=A.tY(new A.d5(m)).giQ()
 p=q==null?null:q.a.c.a.c
 if(p==null)p="Um membro da fam\xedlia"
-o=A.YH(null,"","subject="+A.x8(2,"Convite para participar do Gasto Familiar",B.ac,!1)+"&body="+A.x8(2,"Ol\xe1!\n\n"+p+" est\xe1 te convidando para participar do controle de gastos da fam\xedlia no app Gasto Familiar.\n\nAcesse o aplicativo web pelo link abaixo para acompanhar os mesmos gastos:\nhttps://seu-app-gasto-familiar.web.app\n\nBasta fazer o login com o seu e-mail!",B.ac,!1),null,"mailto")
+o=A.YH(null,"","subject="+A.x8(2,"Convite para participar do Gasto Familiar",B.ac,!1)+"&body="+A.x8(2,"Ol\xe1!\n\n"+p+" est\xe1 te convidando para participar do controle de gastos da fam\xedlia no app Gasto Familiar.\n\nAcesse o aplicativo web pelo link abaixo para acompanhar os mesmos gastos:\nhttps://lucffernands07.github.io/gasto_familiar/\n\nBasta fazer o login com o seu e-mail!",B.ac,!1),null,"mailto")
 s=5
 return A.O(A.aAc(o),$async$ta)
 case 5:s=c?2:4
