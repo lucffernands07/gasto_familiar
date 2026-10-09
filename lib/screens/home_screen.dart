@@ -81,8 +81,12 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFFAF6EE),
       // Atualizado para receber o callback e atualizar o painel ao trocar de conta no menu
       drawer: CustomDrawer(
-        onFamilyChanged: () {
-          _carregarFamiliasEUrl();
+        onFamilyChanged: () async {
+          // Atualiza o ID da família ativa e força a reconstrução da tela
+          final activeId = await FamilyService().getActiveFamilyId();
+          setState(() {
+            _familyId = activeId;
+          });
         },
       ),
       body: SafeArea(
