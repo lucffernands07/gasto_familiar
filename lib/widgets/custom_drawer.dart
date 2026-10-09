@@ -9,14 +9,16 @@ class CustomDrawer extends StatelessWidget {
   Future<void> _enviarConvite(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     final nomeUsuario = user?.displayName ?? 'Um membro da família';
+    final meuUid = user?.uid ?? '';
     
-    // Link correto do seu GitHub Pages
-    const String linkAppWeb = 'https://lucffernands07.github.io/gasto_familiar/'; 
+    // Link do seu GitHub Pages enviando o seu UID como parâmetro de convite
+    const String baseUrl = 'https://lucffernands07.github.io/gasto_familiar/';
+    final String linkComConvite = '$baseUrl?family=$meuUid';
 
     final assunto = Uri.encodeComponent('Convite para participar do Gasto Familiar');
     final corpo = Uri.encodeComponent(
       'Olá!\n\n$nomeUsuario está te convidando para participar do controle de gastos da família no app Gasto Familiar.\n\n'
-      'Acesse o aplicativo web pelo link abaixo para acompanhar os mesmos gastos:\n$linkAppWeb\n\n'
+      'Acesse o aplicativo pelo link abaixo para entrar no mesmo painel de gastos:\n$linkComConvite\n\n'
       'Basta fazer o login com o seu e-mail!'
     );
 
