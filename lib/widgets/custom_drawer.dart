@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/family_service.dart';
 import '../screens/settings_screen.dart';
@@ -14,21 +13,38 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
-  String _activeFamilyId = 'familia_default';
+  void _mostrarDialogEditarFoto(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final controller = TextEditingController(text: user?.photoURL ?? '');
 
-  @override
-  void initState() {
-    super.initState();
-    _loadDrawerState();
-  }
-
-  Future<void> _loadDrawerState() async {
-    final familyId = await FamilyService().getActiveFamilyId();
-    if (mounted) {
-      setState(() {
-        _activeFamilyId = familyId;
-      });
-    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFAF6EE),
+        title: const Text('Editar Imagem de Perfil', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'URL da Imagem (Ex: https://...)', border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+            onPressed: () async {
+              try {
+                await user?.updatePhotoURL(controller.text.trim());
+                if (context.mounted) Navigator.pop(context);
+                setState(() {});
+                widget.onFamilyChanged();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao atualizar foto: $e')));
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -44,48 +60,39 @@ class _CustomDrawerState extends State<CustomDrawer> {
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFCBDD),
-            ),
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('families')
-                  .doc(_activeFamilyId)
-                  .collection('members')
-                  .snapshots(),
-              builder: (context, memberSnapshot) {
-                int totalMembros = 0;
-                if (memberSnapshot.hasData) {
-                  totalMembros = memberSnapshot.data!.docs.length;
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.white,
-                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                      child: photoUrl == null
-                          ? Text(
-                              fallbackLetter,
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      nomeUsuario,
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                    ),
-                    Text(
-                      'Membros ativos: $totalMembros',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
-                    ),
-                  ],
-                );
-              },
+            decoration: const BoxDecoration(color: Color(0xFFFFCBDD)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => _mostrarDialogEditarFoto(context),
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: Colors.white,
+                        backgroundImage: photoUrl != null && photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                        child: photoUrl == null || photoUrl.isEmpty
+                            ? Text(fallbackLetter, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333333)))
+                            : null,
+                      ),
+                      const Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Colors.blue,
+                          child: Icon(Icons.edit, size: 10, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(nomeUsuario, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                const Text('Toque na foto para editar', style: TextStyle(fontSize: 11, color: Color(0xFF666666))),
+              ],
             ),
           ),
           ListTile(
@@ -98,10 +105,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             title: const Text('Configurações'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())).then((_) => widget.onFamilyChanged());
             },
           ),
           const Divider(),
@@ -110,9 +114,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             title: const Text('Sair', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
             onTap: () async {
               await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
+              if (context.mounted) Navigator.pop(context);
             },
           ),
         ],
