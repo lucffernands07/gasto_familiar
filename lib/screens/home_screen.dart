@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/membro.dart';
 import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
@@ -26,43 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _carregarFamiliasEUrl();
+    _carregarBancoAtivo();
   }
 
-  // Verifica se veio um convite na URL usando Uri.base (compatível com Web e Android)
-  Future<void> _carregarFamiliasEUrl() async {
-    if (kIsWeb) {
-      try {
-        final uri = Uri.base;
-        final familyAdminUid = uri.queryParameters['family'];
-        
-        if (familyAdminUid != null && familyAdminUid.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          final user = _auth.currentUser;
-          
-          if (user != null) {
-            final inviteKey = 'processed_invite_${user.uid}_$familyAdminUid';
-            final alreadyProcessed = prefs.getBool(inviteKey) ?? false;
-
-            // Processa o convite apenas se ainda não tiver sido processado para este usuário
-            if (!alreadyProcessed) {
-              await FamilyService().joinFamily(familyAdminUid);
-              await prefs.setBool(inviteKey, true);
-
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Você entrou na Conta Família com sucesso!')),
-                );
-              }
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Erro ao processar URL de convite: $e');
-      }
-    }
-
-    // Obtém o ID ativo (seja o privado ou o da família compartilhada)
+  Future<void> _carregarBancoAtivo() async {
     final activeId = await FamilyService().getActiveFamilyId();
     setState(() {
       _familyId = activeId;
@@ -79,14 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6EE),
-      // Atualizado para receber o callback e atualizar o painel ao trocar de conta no menu
       drawer: CustomDrawer(
-        onFamilyChanged: () async {
-          // Atualiza o ID da família ativa e força a reconstrução da tela
-          final activeId = await FamilyService().getActiveFamilyId();
-          setState(() {
-            _familyId = activeId;
-          });
+        onFamilyChanged: () {
+          _carregarBancoAtivo();
         },
       ),
       body: SafeArea(
@@ -106,7 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildSectionHeader(context),
               const SizedBox(height: 12),
               
-              // Leitura em tempo real dos membros gravados no Firestore usando o _familyId ativo
               StreamBuilder<QuerySnapshot>(
                 stream: _db
                     .collection('families')
@@ -162,55 +121,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopBar(BuildContext context, String? photoUrl, String fallbackLetter) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: FamilyService().getFamilyDetails(_familyId),
-      builder: (context, snapshot) {
-        final familyData = snapshot.data;
-        final customFamilyName = familyData?['familyName'];
-        
-        // Se o _familyId for igual ao UID do usuário logado, é o modo individual
-        final isIndividual = _familyId == _auth.currentUser?.uid;
-        final tituloApp = isIndividual ? 'Meus Gastos' : 'Gastos Familiares';
-        final subtituloBanco = (!isIndividual && customFamilyName != null && customFamilyName.isNotEmpty)
-            ? customFamilyName
-            : null;
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Builder(
-              builder: (ctx) => IconButton(
-                icon: const Icon(Icons.menu_rounded, size: 32, color: Color(0xFF333333)),
-                onPressed: () => Scaffold.of(ctx).openDrawer(),
-              ),
-            ),
-            Column(
-              children: [
-                Text(
-                  tituloApp,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5),
-                ),
-                if (subtituloBanco != null)
-                  Text(
-                    subtituloBanco,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF666666)),
-                  ),
-              ],
-            ),
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: const Color(0xFFFFCBDD),
-              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-              child: photoUrl == null
-                  ? Text(
-                      fallbackLetter,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                    )
-                  : null,
-            ),
-          ],
-        );
-      },
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu_rounded, size: 32, color: Color(0xFF333333)),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        const Text(
+          'Meus Gastos',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5),
+        ),
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: const Color(0xFFFFCBDD),
+          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+          child: photoUrl == null
+              ? Text(
+                  fallbackLetter,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                )
+              : null,
+        ),
+      ],
     );
   }
 
