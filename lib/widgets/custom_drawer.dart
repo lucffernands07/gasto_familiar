@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/family_service.dart';
+import '../screens/settings_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   final VoidCallback onFamilyChanged;
@@ -91,6 +92,17 @@ class _CustomDrawerState extends State<CustomDrawer> {
             leading: const Icon(Icons.home_outlined),
             title: const Text('Início'),
             onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Configurações'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           ),
           const Divider(),
           ListTile(
