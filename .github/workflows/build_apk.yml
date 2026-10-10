@@ -44,16 +44,16 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
 
-      # --- GERAR BUILD ANDROID (APK) ---
-      - name: Habilitar plataforma Android
-        run: flutter create . --platforms android
+      # --- GERAR BUILD ANDROID (APK) [DESATIVADO TEMPORARIAMENTE] ---
+      # - name: Habilitar plataforma Android
+      #   run: flutter create . --platforms android
 
-      - name: Gerar APK (Release)
-        run: flutter build apk --release
+      # - name: Gerar APK (Release)
+      #   run: flutter build apk --release
 
-      - name: Disponibilizar APK para Download
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-familia-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          
+      # - name: Disponibilizar APK para Download
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: app-familia-apk
+      #     path: build/app/outputs/flutter-apk/app-release.apk
+      
