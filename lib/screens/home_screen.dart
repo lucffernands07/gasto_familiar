@@ -20,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   
   String _familyId = 'familia_default';
   String _appTitle = 'Meus Gastos';
-  String _greetingName = 'Usuário';
 
   @override
   void initState() {
@@ -31,11 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _carregarDadosIniciais() async {
     final activeId = await FamilyService().getActiveFamilyId();
     final title = await FamilyService().getAppTitle();
-    final greeting = await FamilyService().getGreetingName();
     setState(() {
       _familyId = activeId;
       _appTitle = title;
-      _greetingName = greeting;
     });
   }
 
@@ -61,11 +58,26 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildTopBar(context, userPhoto, fallbackLetter),
               const SizedBox(height: 20),
-              HeroCard(
-                mostrarSaldo: _mostrarSaldo,
-                onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
-                greetingName: _greetingName, // Passa o nome personalizado para o card
+              
+              // StreamBuilder para calcular o saldo total de forma integrada com os membros
+              StreamBuilder<QuerySnapshot>(
+                stream: _db.collection('families').doc(_familyId).collection('members').snapshots(),
+                builder: (context, snapshot) {
+                  double saldoTotalMembros = 0.0;
+                  if (snapshot.hasData) {
+                    for (var doc in snapshot.data!.docs) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      saldoTotalMembros += (data['saldo'] ?? 0.0).toDouble();
+                    }
+                  }
+
+                  return HeroCard(
+                    mostrarSaldo: _mostrarSaldo,
+                    onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
+                  );
+                },
               ),
+
               const SizedBox(height: 24),
               _buildSectionHeader(context),
               const SizedBox(height: 12),
@@ -195,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        actions: [
+            actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () async {
@@ -228,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: ElevatedButton(
-        onPressed: () {}, // Mantenha a sua lógica de lançamento aqui
+        onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFD4E6F1),
           elevation: 4,
