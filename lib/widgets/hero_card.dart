@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/family_service.dart';
 
-class HeroCard extends StatelessWidget {
+class HeroCard extends StatefulWidget {
   final bool mostrarSaldo;
   final VoidCallback onToggleVisibility;
 
@@ -12,16 +13,32 @@ class HeroCard extends StatelessWidget {
     required this.onToggleVisibility,
   });
 
-  String _primeiroNome(String? nomeCompleto) {
-    if (nomeCompleto == null || nomeCompleto.isEmpty) return 'Usuário';
-    return nomeCompleto.trim().split(' ')[0];
+  @override
+  State<HeroCard> createState() => _HeroCardState();
+}
+
+class _HeroCardState extends State<HeroCard> {
+  String _greetingName = 'Usuário';
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarNomeGreeting();
+  }
+
+  Future<void> _carregarNomeGreeting() async {
+    final nome = await FamilyService().getGreetingName();
+    if (mounted) {
+      setState(() {
+        _greetingName = nome;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final familyId = user?.uid ?? 'familia_default';
-    final nomeExibicao = _primeiroNome(user?.displayName ?? user?.email?.split('@')[0]);
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -73,7 +90,7 @@ class HeroCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Olá, $nomeExibicao! Este mês:',
+                    'Olá, $_greetingName! Este mês:',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -104,7 +121,7 @@ class HeroCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    mostrarSaldo
+                    widget.mostrarSaldo
                         ? 'R\$ ${saldoTotal.toStringAsFixed(2).replaceFirst('.', ',')}'
                         : 'R\$ ••••••',
                     style: const TextStyle(
@@ -115,9 +132,9 @@ class HeroCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: onToggleVisibility,
+                    onTap: widget.onToggleVisibility,
                     child: Icon(
-                      mostrarSaldo ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      widget.mostrarSaldo ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                       size: 22,
                       color: const Color(0xFF555555),
                     ),
@@ -127,14 +144,14 @@ class HeroCard extends StatelessWidget {
               const SizedBox(height: 20),
               _buildItemCard(
                 'Receitas',
-                mostrarSaldo ? 'R\$ ${totalReceitas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                widget.mostrarSaldo ? 'R\$ ${totalReceitas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                 const Color(0xFFA8E6CF),
                 Icons.arrow_upward_rounded,
               ),
               const SizedBox(height: 12),
               _buildItemCard(
                 'Gastos',
-                mostrarSaldo ? 'R\$ ${totalGastos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                widget.mostrarSaldo ? 'R\$ ${totalGastos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                 const Color(0xFFFF8B94),
                 Icons.arrow_downward_rounded,
               ),
