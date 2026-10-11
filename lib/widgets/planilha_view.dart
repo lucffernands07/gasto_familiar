@@ -221,7 +221,7 @@ class PlanilhaView extends StatelessWidget {
                           'tipo': item['tipo'],
                         }),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: const BoxDecoration(
                             border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
                           ),
@@ -245,28 +245,13 @@ class PlanilhaView extends StatelessWidget {
                               ),
                               Expanded(
                                 flex: 2,
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Container(
-                                    width: 82,
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: item['status'] == 'Recebido' || item['status'] == 'Pago'
-                                          ? const Color(0xFFE8F8F5)
-                                          : const Color(0xFFFEF9E7),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      item['status'],
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: item['status'] == 'Recebido' || item['status'] == 'Pago'
-                                            ? const Color(0xFF117A65)
-                                            : const Color(0xFF7D6608),
-                                      ),
-                                    ),
+                                child: Text(
+                                  item['status'],
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF111111),
                                   ),
                                 ),
                               ),
