@@ -38,6 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _mudarAba(String novaAba) {
+    setState(() {
+      _abaAtiva = novaAba;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -47,46 +53,75 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6EE),
       drawer: CustomDrawer(onFamilyChanged: _carregarDadosIniciais),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopBar(context, userPhoto, fallbackLetter),
-              const SizedBox(height: 20),
-              HeroCard(
-                mostrarSaldo: _mostrarSaldo,
-                onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
-                abaAtiva: _abaAtiva,
-                onAbaChanged: (novaAba) => setState(() => _abaAtiva = novaAba),
-              ),
-              const SizedBox(height: 24),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  final offsetAnimation = Tween<Offset>(
-                    begin: Offset(_abaAtiva == 'planilha' ? 1.0 : -1.0, 0.0),
-                    end: Offset.zero,
-                  ).animate(animation);
-                  return SlideTransition(position: offsetAnimation, child: child);
-                },
-                child: KeyedSubtree(
-                  key: ValueKey<String>(_abaAtiva),
-                  child: _abaAtiva == 'visao_geral'
-                      ? VisaoGeralView(
-                          familyId: _familyId,
-                          mostrarSaldo: _mostrarSaldo,
-                          onEditMember: _mostrarDialogEditarMembro,
-                          onDeleteMember: _excluirMembro,
-                          onCreateMember: () => _mostrarDialogCriarMembro(context),
-                        )
-                      : PlanilhaView(familyId: _familyId, mostrarSaldo: _mostrarSaldo),
+      body: GestureDetector(
+        // Adiciona suporte a gesto de arrastar para esquerda/direita
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity! < 0) {
+            // Arrastou para a esquerda -> Vai para Planilha
+            if (_abaAtiva == 'visao_geral') _mudarAba('planilha');
+          } else if (details.primaryVelocity! > 0) {
+            // Arrastou para a direita -> Vai para Visão Geral
+            if (_abaAtiva == 'planilha') _mudarAba('visao_geral');
+          }
+        },
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTopBar(context, userPhoto, fallbackLetter),
+                const SizedBox(height: 20),
+                HeroCard(
+                  mostrarSaldo: _mostrarSaldo,
+                  onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
+                  abaAtiva: _abaAtiva,
+                  onAbaChanged: _mudarAba,
                 ),
-              ),
-              const SizedBox(height: 80),
-            ],
+                const SizedBox(height: 16),
+                
+                // Indicador visual com seta pedindo para arrastar / ver Planilha
+                if (_abaAtiva == 'visao_geral')
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFF888888)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Arraste ou clique em Planilha',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    final offsetAnimation = Tween<Offset>(
+                      begin: Offset(_abaAtiva == 'planilha' ? 1.0 : -1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(animation);
+                    return SlideTransition(position: offsetAnimation, child: child);
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey<String>(_abaAtiva),
+                    child: _abaAtiva == 'visao_geral'
+                        ? VisaoGeralView(
+                            familyId: _familyId,
+                            mostrarSaldo: _mostrarSaldo,
+                            onEditMember: _mostrarDialogEditarMembro,
+                            onDeleteMember: _excluirMembro,
+                            onCreateMember: () => _mostrarDialogCriarMembro(context),
+                          )
+                        : PlanilhaView(familyId: _familyId, mostrarSaldo: _mostrarSaldo),
+                  ),
+                ),
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ),
       ),
@@ -299,8 +334,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final valorController = TextEditingController();
     final descricaoController = TextEditingController();
     final categoriaController = TextEditingController(text: 'Receita');
-    String tipoSelecionado = 'receita'; // Padrão receita
-    String statusSelecionado = 'Recebido'; // Padrão
+    String tipoSelecionado = 'receita';
+    String statusSelecionado = 'Recebido';
 
     showDialog(
       context: context,
