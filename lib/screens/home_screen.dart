@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/membro.dart';
 import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
@@ -59,18 +61,9 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildTopBar(context, userPhoto, fallbackLetter),
               const SizedBox(height: 20),
               
-              // StreamBuilder para calcular o saldo total de forma integrada com os membros
               StreamBuilder<QuerySnapshot>(
                 stream: _db.collection('families').doc(_familyId).collection('members').snapshots(),
                 builder: (context, snapshot) {
-                  double saldoTotalMembros = 0.0;
-                  if (snapshot.hasData) {
-                    for (var doc in snapshot.data!.docs) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      saldoTotalMembros += (data['saldo'] ?? 0.0).toDouble();
-                    }
-                  }
-
                   return HeroCard(
                     mostrarSaldo: _mostrarSaldo,
                     onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
@@ -145,7 +138,11 @@ class _HomeScreenState extends State<HomeScreen> {
         CircleAvatar(
           radius: 20,
           backgroundColor: const Color(0xFFFFCBDD),
-          backgroundImage: photoUrl != null && photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+          backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+              ? (photoUrl.startsWith('data:image')
+                  ? MemoryImage(base64Decode(photoUrl.split(',')[1])) as ImageProvider
+                  : NetworkImage(photoUrl))
+              : null,
           child: photoUrl == null || photoUrl.isEmpty
               ? Text(fallbackLetter, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)))
               : null,
@@ -177,60 +174,86 @@ class _HomeScreenState extends State<HomeScreen> {
   void _mostrarDialogCriarMembro(BuildContext context) {
     final nomeController = TextEditingController();
     final saldoController = TextEditingController();
-    final fotoController = TextEditingController();
+    String? fotoBase64Selecionada;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFAF6EE),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Criar Novo Membro', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nomeController,
-                decoration: const InputDecoration(labelText: 'Nome do Membro', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: saldoController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Saldo Inicial (R\$)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: fotoController,
-                decoration: const InputDecoration(labelText: 'URL da Foto (Opcional)', border: OutlineInputBorder()),
-              ),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          backgroundColor: const Color(0xFFFAF6EE),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Criar Novo Membro', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    final pickedFile = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 400,
+                      maxHeight: 400,
+                      imageQuality: 80,
+                    );
+                    if (pickedFile != null) {
+                      final bytes = await pickedFile.readAsBytes();
+                      setStateDialog(() {
+                        fotoBase64Selecionada = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                      });
+                    }
+                  },
+                  child: CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.white,
+                    backgroundImage: fotoBase64Selecionada != null
+                        ? MemoryImage(base64Decode(fotoBase64Selecionada!.split(',')[1]))
+                        : null,
+                    child: fotoBase64Selecionada == null
+                        ? const Icon(Icons.add_a_photo, size: 28, color: Colors.grey)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text('Toque para escolher foto', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(labelText: 'Nome do Membro', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: saldoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Saldo Inicial (R\$)', border: OutlineInputBorder()),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                final nome = nomeController.text.trim();
+                final saldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
+
+                if (nome.isNotEmpty) {
+                  final membroId = _db.collection('families').doc(_familyId).collection('members').doc().id;
+                  await _db.collection('families').doc(_familyId).collection('members').doc(membroId).set({
+                    'nome': nome,
+                    'saldo': saldo,
+                    'imageUrl': fotoBase64Selecionada ?? 'https://i.pravatar.cc/150?img=12',
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: const Text('Criar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
         ),
-            actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
-              final nome = nomeController.text.trim();
-              final saldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
-              final foto = fotoController.text.trim();
-
-              if (nome.isNotEmpty) {
-                final membroId = _db.collection('families').doc(_familyId).collection('members').doc().id;
-                await _db.collection('families').doc(_familyId).collection('members').doc(membroId).set({
-                  'nome': nome,
-                  'saldo': saldo,
-                  'imageUrl': foto.isNotEmpty ? foto : 'https://i.pravatar.cc/150?img=12',
-                  'updatedAt': FieldValue.serverTimestamp(),
-                });
-
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            child: const Text('Criar', style: TextStyle(color: Color(0xFF2C3E50))),
-          ),
-        ],
       ),
     );
   }
