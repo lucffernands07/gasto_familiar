@@ -92609,7 +92609,7 @@ i=A.cm(o.a.c?"R$ "+B.c.h7(B.d.a2(s+b-a,2),".",","):d,f,f,f,B.Xg,f,f)
 h=o.a
 g=h.d
 i=A.ee(A.b([i,B.Tg,A.fX(f,A.a9a(h.c?B.Iw:B.Ix,B.h0,f,22),B.ac,!1,f,f,f,f,f,f,f,f,f,f,f,f,f,f,g,f,f,f,f,f,f)],j),B.N,B.db,B.X,0)
-s=A.jI(A.eX(A.b([B.Zi,B.iH,i,B.iH,A.cm(o.a.c?"Saldo pr\xe9vio: R$ "+B.c.h7(B.d.a2(s+a0-a1,2),".",","):"Saldo pr\xe9vio: R$ \u2022\u2022\u2022\u2022\u2022\u2022",f,f,f,B.Wy,f,f)],j),B.N,B.V,B.X),f,f)
+s=A.jI(A.eX(A.b([B.Zi,B.iH,i,B.iH,A.cm(o.a.c?"Saldo Previsto: R$ "+B.c.h7(B.d.a2(s+a0-a1,2),".",","):"Saldo Previsto: R$ \u2022\u2022\u2022\u2022\u2022\u2022",f,f,f,B.Wy,f,f)],j),B.N,B.V,B.X),f,f)
 c=o.E7("Membros / Saldo Inicial",o.a.c?"R$ "+B.c.h7(B.d.a2(c.a,2),".",","):d,B.F0,B.Ip)
 i=o.E7("Receitas (Recebidas)",o.a.c?"R$ "+B.c.h7(B.d.a2(b,2),".",","):d,B.jG,B.IA)
 return A.dK(f,A.eX(A.b([k,B.iH,B.ZJ,B.iG,s,B.Al,c,B.Ak,i,B.Ak,o.E7("Gastos (Pagos)",o.a.c?"R$ "+B.c.h7(B.d.a2(a,2),".",","):d,B.jE,B.Iz)],j),B.b6,B.V,B.X),B.u,f,new A.ce(f,f,f,r,p,B.p6,B.ae),f,f,f,B.hr,f,f,1/0)},
