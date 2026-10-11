@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/family_service.dart';
 import '../screens/settings_screen.dart';
 
@@ -13,38 +15,38 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
-  void _mostrarDialogEditarFoto(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final controller = TextEditingController(text: user?.photoURL ?? '');
+  Future<void> _escolherEAtualizarFoto(BuildContext context) async {
+    final picker = ImagePicker();
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        maxHeight: 500,
+        imageQuality: 85,
+      );
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFAF6EE),
-        title: const Text('Editar Imagem de Perfil', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'URL da Imagem (Ex: https://...)', border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            onPressed: () async {
-              try {
-                await user?.updatePhotoURL(controller.text.trim());
-                if (context.mounted) Navigator.pop(context);
-                setState(() {});
-                widget.onFamilyChanged();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao atualizar foto: $e')));
-              }
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
-      ),
-    );
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+        final user = FirebaseAuth.instance.currentUser;
+        await user?.updatePhotoURL(base64Image);
+
+        if (context.mounted) {
+          setState(() {});
+          widget.onFamilyChanged();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto de perfil atualizada com sucesso!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao selecionar imagem: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -66,13 +68,17 @@ class _CustomDrawerState extends State<CustomDrawer> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: () => _mostrarDialogEditarFoto(context),
+                  onTap: () => _escolherEAtualizarFoto(context),
                   child: Stack(
                     children: [
                       CircleAvatar(
                         radius: 26,
                         backgroundColor: Colors.white,
-                        backgroundImage: photoUrl != null && photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                        backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                            ? (photoUrl.startsWith('data:image')
+                                ? MemoryImage(base64Decode(photoUrl.split(',')[1])) as ImageProvider
+                                : NetworkImage(photoUrl))
+                            : null,
                         child: photoUrl == null || photoUrl.isEmpty
                             ? Text(fallbackLetter, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333333)))
                             : null,
@@ -83,7 +89,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                         child: CircleAvatar(
                           radius: 10,
                           backgroundColor: Colors.blue,
-                          child: Icon(Icons.edit, size: 10, color: Colors.white),
+                          child: Icon(Icons.camera_alt, size: 10, color: Colors.white),
                         ),
                       ),
                     ],
@@ -91,7 +97,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 ),
                 const SizedBox(height: 8),
                 Text(nomeUsuario, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                const Text('Toque na foto para editar', style: TextStyle(fontSize: 11, color: Color(0xFF666666))),
+                const Text('Toque na foto para alterar', style: TextStyle(fontSize: 11, color: Color(0xFF666666))),
               ],
             ),
           ),
