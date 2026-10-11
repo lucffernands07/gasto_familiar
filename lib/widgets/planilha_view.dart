@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PlanilhaView extends StatelessWidget {
   final String familyId;
@@ -11,13 +12,27 @@ class PlanilhaView extends StatelessWidget {
     required this.mostrarSaldo,
   });
 
+  Future<void> _registrarHistorico(String acao, String detalhes) async {
+    final user = FirebaseAuth.instance.currentUser;
+    await FirebaseFirestore.instance
+        .collection('families')
+        .doc(familyId)
+        .collection('history')
+        .add({
+      'acao': acao,
+      'detalhes': detalhes,
+      'usuario': user?.email ?? 'Usuário',
+      'ip': 'IP Local / Web',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   void _mostrarDialogEditarTransacao(BuildContext context, String transId, Map<String, dynamic> dadosAtuais) {
     final db = FirebaseFirestore.instance;
     final descController = TextEditingController(text: dadosAtuais['descricao'] ?? '');
     final valorController = TextEditingController(text: (dadosAtuais['valor'] ?? 0.0).toString());
     final catController = TextEditingController(text: dadosAtuais['categoria'] ?? 'Geral');
     String statusAtual = dadosAtuais['status'] ?? 'Recebido';
-    String tipoAtual = dadosAtuais['tipo'] ?? 'receita';
 
     showDialog(
       context: context,
@@ -37,17 +52,13 @@ class PlanilhaView extends StatelessWidget {
                 TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Valor', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: statusAtual,
+                  value: ['Recebido', 'Pago', 'Pendente'].contains(statusAtual) ? statusAtual : 'Recebido',
                   decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
-                  items: tipoAtual == 'receita'
-                      ? const [
-                          DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
-                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                        ]
-                      : const [
-                          DropdownMenuItem(value: 'Pago', child: Text('Pago')),
-                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                        ],
+                  items: const [
+                    DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
+                    DropdownMenuItem(value: 'Pago', child: Text('Pago')),
+                    DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                  ],
                   onChanged: (val) {
                     if (val != null) setStateDialog(() => statusAtual = val);
                   },
@@ -60,6 +71,7 @@ class PlanilhaView extends StatelessWidget {
               onPressed: () async {
                 Navigator.pop(context);
                 await db.collection('families').doc(familyId).collection('transactions').doc(transId).delete();
+                await _registrarHistorico('Exclusão', 'Transação "${dadosAtuais['descricao']}" excluída');
               },
               child: const Text('Excluir', style: TextStyle(color: Colors.red)),
             ),
@@ -77,6 +89,7 @@ class PlanilhaView extends StatelessWidget {
                     'valor': novoValor,
                     'status': statusAtual,
                   });
+                  await _registrarHistorico('Edição', 'Transação "$novaDesc" atualizada (R\$ $novoValor - $statusAtual)');
                   if (context.mounted) Navigator.pop(context);
                 }
               },
@@ -240,7 +253,7 @@ class PlanilhaView extends StatelessWidget {
                                 child: Text(
                                   mostrarSaldo ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',') : '•••',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF222222)),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF222222)), // Sem negrito
                                 ),
                               ),
                               Expanded(
