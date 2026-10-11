@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
+  String _abaAtiva = 'visao_geral'; // Controla se mostra 'visao_geral' ou 'planilha'
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   
   String _familyId = 'familia_default';
@@ -64,55 +65,34 @@ class _HomeScreenState extends State<HomeScreen> {
               HeroCard(
                 mostrarSaldo: _mostrarSaldo,
                 onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
+                abaAtiva: _abaAtiva,
+                onAbaChanged: (novaAba) {
+                  setState(() {
+                    _abaAtiva = novaAba;
+                  });
+                },
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader(context),
-              const SizedBox(height: 12),
               
-              StreamBuilder<QuerySnapshot>(
-                stream: _db.collection('families').doc(_familyId).collection('members').snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Center(child: CircularProgressIndicator(color: Color(0xFF4A4A4A))),
-                    );
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                      child: Text(
-                        'Nenhum membro registrado. Clique em "Adicionar Membro" para começar!',
-                        style: TextStyle(color: Color(0xFF666666)),
-                      ),
-                    );
-                  }
-
-                  final docs = snapshot.data!.docs;
-                  return Column(
-                    children: docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final membroId = doc.id;
-                      final membro = Membro(
-                        nome: data['nome'] ?? 'Membro',
-                        saldo: (data['saldo'] ?? 0.0).toDouble(),
-                        imageUrl: data['imageUrl'] ?? 'https://i.pravatar.cc/150?img=12',
-                        borderColor: const Color(0xFFA8DADC),
-                      );
-
-                      return MembroTile(
-                        memberId: membroId,
-                        membro: membro,
-                        mostrarSaldo: _mostrarSaldo,
-                        onEdit: () => _mostrarDialogEditarMembro(context, membroId, data),
-                        onDelete: () => _excluirMembro(context, membroId),
-                      );
-                    }).toList(),
-                  );
+              // Conteúdo dinâmico com transição lateral suave dependendo da aba selecionada
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: Offset(_abaAtiva == 'planilha' ? 1.0 : -1.0, 0.0),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return SlideTransition(position: offsetAnimation, child: child);
                 },
+                child: KeyedSubtree(
+                  key: ValueKey<String>(_abaAtiva),
+                  child: _abaAtiva == 'visao_geral' 
+                      ? _buildVisaoGeralContent(context) 
+                      : _buildPlanilhaContent(context),
+                ),
               ),
+
               const SizedBox(height: 80),
             ],
           ),
@@ -120,6 +100,87 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _buildFloatingButton(context),
+    );
+  }
+
+  Widget _buildVisaoGeralContent(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context),
+        const SizedBox(height: 12),
+        StreamBuilder<QuerySnapshot>(
+          stream: _db.collection('families').doc(_familyId).collection('members').snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.all(20),
+                child: Center(child: CircularProgressIndicator(color: Color(0xFF4A4A4A))),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.0),
+                child: Text(
+                  'Nenhum membro registrado. Clique em "Adicionar Membro" para começar!',
+                  style: TextStyle(color: Color(0xFF666666)),
+                ),
+              );
+            }
+
+            final docs = snapshot.data!.docs;
+            return Column(
+              children: docs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final membroId = doc.id;
+                final membro = Membro(
+                  nome: data['nome'] ?? 'Membro',
+                  saldo: (data['saldo'] ?? 0.0).toDouble(),
+                  imageUrl: data['imageUrl'] ?? 'https://i.pravatar.cc/150?img=12',
+                  borderColor: const Color(0xFFA8DADC),
+                );
+
+                return MembroTile(
+                  memberId: membroId,
+                  membro: membro,
+                  mostrarSaldo: _mostrarSaldo,
+                  onEdit: () => _mostrarDialogEditarMembro(context, membroId, data),
+                  onDelete: () => _excluirMembro(context, membroId),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlanilhaContent(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFDF8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEFEBE4)),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.table_chart_outlined, size: 48, color: Color(0xFF888888)),
+          SizedBox(height: 12),
+          Text(
+            'Tela de Planilha Detalhada',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Em breve aqui estarão listadas todas as movimentações detalhadas.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -383,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: const [
             Icon(Icons.add, color: Color(0xFF2C3E50), size: 22),
             SizedBox(width: 6),
-            Text('Lançar / Editar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF2C3E50))),
+            Text('Lançar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF2C3E50))),
           ],
         ),
       ),
@@ -429,44 +490,4 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: descricaoController,
-                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Mercado)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: valorController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-            ElevatedButton(
-              onPressed: () async {
-                final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
-                final descricao = descricaoController.text.trim();
-
-                if (valor > 0) {
-                  final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
-                  await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
-                    'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
-                    'valor': valor,
-                    'tipo': tipoSelecionado,
-                    'createdAt': FieldValue.serverTimestamp(),
-                  });
-
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                
