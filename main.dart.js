@@ -92580,8 +92580,8 @@ A.bA(m,$.cG(),!0)
 return A.Rn(new A.arr(l,this.a),A.At(new A.ch(m)).bX("families").cE(this.b).bX("transactions").x4(),t.cG)},
 $S:605}
 A.arr.prototype={
-$2(a2,a3){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=null,e="Recebido",d="R$ \u2022\u2022\u2022\u2022\u2022\u2022",c=a3.b,b=0,a=0,a0=0,a1=0
-if(c!=null)for(c=c.gjh(),s=c.length,r=t.a,q=0;q<c.length;c.length===s||(0,A.D)(c),++q){p=c[q].o3()
+$2(a0,a1){var s,r,q,p,o,n,m,l,k,j,i,h=null,g="Recebido",f="R$ \u2022\u2022\u2022\u2022\u2022\u2022",e=a1.b,d=0,c=0,b=0,a=0
+if(e!=null)for(e=e.gjh(),s=e.length,r=t.a,q=0;q<e.length;e.length===s||(0,A.D)(e),++q){p=e[q].o3()
 p.toString
 r.a(p)
 o=p.h(0,"valor")
@@ -92589,30 +92589,28 @@ n=J.a15(o==null?0:o)
 m=p.h(0,"tipo")
 if(m==null)m="despesa"
 l=p.h(0,"status")
-if(l==null)l=J.d(m,"receita")?e:"Pago"
-if(J.d(m,"receita")){a0+=n
-if(J.d(l,e))b+=n}else{a1+=n
-if(J.d(l,"Pago"))a+=n}}c=this.a
-s=c.a
-r=A.ez(28)
-p=A.b([new A.bj(0,B.H,A.aC(20,B.le.C()>>>16&255,B.le.C()>>>8&255,B.le.C()&255),B.fj,15)],t.E)
-o=this.b
-k=A.l8(A.cm("Ol\xe1, "+o.d+"!",f,B.aU,f,B.iN,f,f),1)
-j=t.p
-i=A.b([A.cm("Vis\xe3o Geral",f,f,f,A.eL(f,f,B.b5,f,f,f,f,f,f,f,f,13,f,f,o.a.e==="visao_geral"?B.an:B.a3,f,f,!0,f,f,f,f,f,f,f,f),f,f)],j)
-if(o.a.e==="visao_geral")B.b.N(i,A.b([B.Ai,A.dK(f,f,B.u,f,B.n_,f,7,f,f,f,f,7)],j))
-i=A.fX(f,A.ef(i,B.N,B.V,B.X,0),B.ac,!1,f,f,f,f,f,f,f,f,f,f,f,f,f,f,new A.arp(o),f,f,f,f,f,f)
-h=A.b([A.cm("Planilha",f,f,f,A.eL(f,f,B.b5,f,f,f,f,f,f,f,f,13,f,f,o.a.e==="planilha"?B.an:B.a3,f,f,!0,f,f,f,f,f,f,f,f),f,f)],j)
-if(o.a.e==="planilha")B.b.N(h,A.b([B.Ai,A.dK(f,f,B.u,f,B.n_,f,7,f,f,f,f,7)],j))
-k=A.ef(A.b([k,A.ef(A.b([i,B.Ah,A.fX(f,A.ef(h,B.N,B.V,B.X,0),B.ac,!1,f,f,f,f,f,f,f,f,f,f,f,f,f,f,new A.arq(o),f,f,f,f,f,f)],j),B.N,B.V,B.X,0)],j),B.N,B.cc,B.X,0)
-i=A.cm(o.a.c?"R$ "+B.c.h7(B.d.a2(s+b-a,2),".",","):d,f,f,f,B.Xh,f,f)
-h=o.a
-g=h.d
-i=A.ef(A.b([i,B.Th,A.fX(f,A.a9a(h.c?B.Ix:B.Iy,B.h0,f,22),B.ac,!1,f,f,f,f,f,f,f,f,f,f,f,f,f,f,g,f,f,f,f,f,f)],j),B.N,B.dc,B.X,0)
-s=A.jI(A.eX(A.b([B.Zj,B.iG,i,B.iG,A.cm(o.a.c?"Saldo Previsto: R$ "+B.c.h7(B.d.a2(s+a0-a1,2),".",","):"Saldo Previsto: R$ \u2022\u2022\u2022\u2022\u2022\u2022",f,f,f,B.Wz,f,f)],j),B.N,B.V,B.X),f,f)
-c=o.E7("Membros / Saldo Inicial",o.a.c?"R$ "+B.c.h7(B.d.a2(c.a,2),".",","):d,B.F_,B.Iq)
-i=o.E7("Receitas (Recebidas)",o.a.c?"R$ "+B.c.h7(B.d.a2(b,2),".",","):d,B.jF,B.IB)
-return A.dK(f,A.eX(A.b([k,B.iG,B.ZK,B.iF,s,B.Al,c,B.Ak,i,B.Ak,o.E7("Gastos (Pagos)",o.a.c?"R$ "+B.c.h7(B.d.a2(a,2),".",","):d,B.jD,B.IA)],j),B.b6,B.V,B.X),B.u,f,new A.ce(f,f,f,r,p,B.p6,B.ae),f,f,f,B.hr,f,f,1/0)},
+if(l==null)l=J.d(m,"receita")?g:"Pago"
+if(J.d(m,"receita")){b+=n
+if(J.d(l,g))d+=n}else{a+=n
+if(J.d(l,"Pago"))c+=n}}e=A.ez(28)
+s=A.b([new A.bj(0,B.H,A.aC(20,B.le.C()>>>16&255,B.le.C()>>>8&255,B.le.C()&255),B.fj,15)],t.E)
+r=this.b
+p=A.l8(A.cm("Ol\xe1, "+r.d+"!",h,B.aU,h,B.iN,h,h),1)
+o=t.p
+k=A.b([A.cm("Vis\xe3o Geral",h,h,h,A.eL(h,h,B.b5,h,h,h,h,h,h,h,h,13,h,h,r.a.e==="visao_geral"?B.an:B.a3,h,h,!0,h,h,h,h,h,h,h,h),h,h)],o)
+if(r.a.e==="visao_geral")B.b.N(k,A.b([B.Ai,A.dK(h,h,B.u,h,B.n_,h,7,h,h,h,h,7)],o))
+k=A.fX(h,A.ef(k,B.N,B.V,B.X,0),B.ac,!1,h,h,h,h,h,h,h,h,h,h,h,h,h,h,new A.arp(r),h,h,h,h,h,h)
+j=A.b([A.cm("Planilha",h,h,h,A.eL(h,h,B.b5,h,h,h,h,h,h,h,h,13,h,h,r.a.e==="planilha"?B.an:B.a3,h,h,!0,h,h,h,h,h,h,h,h),h,h)],o)
+if(r.a.e==="planilha")B.b.N(j,A.b([B.Ai,A.dK(h,h,B.u,h,B.n_,h,7,h,h,h,h,7)],o))
+p=A.ef(A.b([p,A.ef(A.b([k,B.Ah,A.fX(h,A.ef(j,B.N,B.V,B.X,0),B.ac,!1,h,h,h,h,h,h,h,h,h,h,h,h,h,h,new A.arq(r),h,h,h,h,h,h)],o),B.N,B.V,B.X,0)],o),B.N,B.cc,B.X,0)
+k=A.cm(r.a.c?"R$ "+B.c.h7(B.d.a2(d-c,2),".",","):f,h,h,h,B.Xh,h,h)
+j=r.a
+i=j.d
+k=A.ef(A.b([k,B.Th,A.fX(h,A.a9a(j.c?B.Ix:B.Iy,B.h0,h,22),B.ac,!1,h,h,h,h,h,h,h,h,h,h,h,h,h,h,i,h,h,h,h,h,h)],o),B.N,B.dc,B.X,0)
+k=A.jI(A.eX(A.b([B.Zj,B.iG,k,B.iG,A.cm(r.a.c?"Saldo previsto: R$ "+B.c.h7(B.d.a2(b-a,2),".",","):"Saldo previsto: R$ \u2022\u2022\u2022\u2022\u2022\u2022",h,h,h,B.Wz,h,h)],o),B.N,B.V,B.X),h,h)
+j=r.E7("Saldo Fam\xedlia",r.a.c?"R$ "+B.c.h7(B.d.a2(this.a.a,2),".",","):f,B.F_,B.Iq)
+i=r.E7("Receitas (Recebidas)",r.a.c?"R$ "+B.c.h7(B.d.a2(d,2),".",","):f,B.jF,B.IB)
+return A.dK(h,A.eX(A.b([p,B.iG,B.ZK,B.iF,k,B.Al,j,B.Ak,i,B.Ak,r.E7("Gastos (Pagos)",r.a.c?"R$ "+B.c.h7(B.d.a2(c,2),".",","):f,B.jD,B.IA)],o),B.b6,B.V,B.X),B.u,h,new A.ce(h,h,h,e,s,B.p6,B.ae),h,h,h,B.hr,h,h,1/0)},
 $S:606}
 A.arp.prototype={
 $0(){return this.a.a.Zt("visao_geral")},
