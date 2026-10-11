@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/family_service.dart';
 import '../screens/settings_screen.dart';
+import '../screens/historico_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   final VoidCallback onFamilyChanged;
@@ -118,6 +119,20 @@ class _CustomDrawerState extends State<CustomDrawer> {
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())).then((_) => widget.onFamilyChanged());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history_rounded),
+            title: const Text('Histórico'),
+            onTap: () async {
+              Navigator.pop(context);
+              final familyId = await FamilyService().getActiveFamilyId();
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HistoricoScreen(familyId: familyId)),
+                );
+              }
             },
           ),
           const Divider(),
