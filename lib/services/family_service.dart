@@ -52,6 +52,10 @@ class FamilyService {
     for (var doc in transSnapshot.docs) {
       await doc.reference.delete();
     }
+    final historySnapshot = await familyRef.collection('history').get();
+    for (var doc in historySnapshot.docs) {
+      await doc.reference.delete();
+    }
     await familyRef.delete();
   }
 
@@ -64,10 +68,29 @@ class FamilyService {
     final membersSnapshot = await _db.collection('families').doc(familyId).collection('members').get();
     final transactionsSnapshot = await _db.collection('families').doc(familyId).collection('transactions').get();
 
+    // Mapeamento limpo e seguro para evitar erros de minificação na Web
     final Map<String, dynamic> backupData = {
-      'familyInfo': familyDoc.exists ? familyDoc.data() : {},
-      'members': membersSnapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList(),
-      'transactions': transactionsSnapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList(),
+      'familyInfo': familyDoc.exists && familyDoc.data() != null ? Map<String, dynamic>.from(familyDoc.data()!) : {},
+      'members': membersSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'nome': data['nome'] ?? '',
+          'saldo': (data['saldo'] ?? 0.0).toDouble(),
+          'imageUrl': data['imageUrl'] ?? '',
+        };
+      }).toList(),
+      'transactions': transactionsSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'categoria': data['categoria'] ?? '',
+          'descricao': data['descricao'] ?? '',
+          'valor': (data['valor'] ?? 0.0).toDouble(),
+          'tipo': data['tipo'] ?? 'despesa',
+          'status': data['status'] ?? 'Recebido',
+        };
+      }).toList(),
       'backupDate': DateTime.now().toIso8601String(),
     };
 
@@ -85,7 +108,7 @@ class FamilyService {
     await zerarBancoDados();
 
     if (data['familyInfo'] != null && (data['familyInfo'] as Map).isNotEmpty) {
-      await familyRef.set(data['familyInfo']);
+      await familyRef.set(Map<String, dynamic>.from(data['familyInfo']));
     }
 
     if (data['members'] != null) {
