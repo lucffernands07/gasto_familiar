@@ -11,6 +11,84 @@ class PlanilhaView extends StatelessWidget {
     required this.mostrarSaldo,
   });
 
+  void _mostrarDialogEditarTransacao(BuildContext context, String transId, Map<String, dynamic> dadosAtuais) {
+    final db = FirebaseFirestore.instance;
+    final descController = TextEditingController(text: dadosAtuais['descricao'] ?? '');
+    final valorController = TextEditingController(text: (dadosAtuais['valor'] ?? 0.0).toString());
+    final catController = TextEditingController(text: dadosAtuais['categoria'] ?? 'Geral');
+    String statusAtual = dadosAtuais['status'] ?? 'Recebido';
+    String tipoAtual = dadosAtuais['tipo'] ?? 'receita';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          backgroundColor: const Color(0xFFFAF6EE),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Editar Transação', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: catController, decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: descController, decoration: const InputDecoration(labelText: 'Descrição', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Valor', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: statusAtual,
+                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
+                  items: tipoAtual == 'receita'
+                      ? const [
+                          DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
+                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                        ]
+                      : const [
+                          DropdownMenuItem(value: 'Pago', child: Text('Pago')),
+                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                        ],
+                  onChanged: (val) {
+                    if (val != null) setStateDialog(() => statusAtual = val);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await db.collection('families').doc(familyId).collection('transactions').doc(transId).delete();
+              },
+              child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                final novoValor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
+                final novaDesc = descController.text.trim();
+                final novaCat = catController.text.trim();
+
+                if (novoValor > 0) {
+                  await db.collection('families').doc(familyId).collection('transactions').doc(transId).update({
+                    'categoria': novaCat.isNotEmpty ? novaCat : 'Geral',
+                    'descricao': novaDesc.isNotEmpty ? novaDesc : 'Transação',
+                    'valor': novoValor,
+                    'status': statusAtual,
+                  });
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final FirebaseFirestore db = FirebaseFirestore.instance;
@@ -51,7 +129,6 @@ class PlanilhaView extends StatelessWidget {
           );
         }
 
-        // Agrupar transações por categoria
         final Map<String, List<Map<String, dynamic>>> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
@@ -66,6 +143,7 @@ class PlanilhaView extends StatelessWidget {
             'descricao': data['descricao'] ?? '',
             'valor': (data['valor'] ?? 0.0).toDouble(),
             'status': data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago'),
+            'tipo': tipo,
           });
           tiposPorCategoria[categoria] = tipo;
         }
@@ -99,7 +177,6 @@ class PlanilhaView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Cabeçalho da Tabela
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
@@ -135,61 +212,68 @@ class PlanilhaView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Linhas de Itens
-                  ...itens.map((item) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                item['descricao'],
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF333333)),
+                  ...itens.map((item) => InkWell(
+                        onTap: () => _mostrarDialogEditarTransacao(context, item['id'], {
+                          'categoria': categoria,
+                          'descricao': item['descricao'],
+                          'valor': item['valor'],
+                          'status': item['status'],
+                          'tipo': item['tipo'],
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: const BoxDecoration(
+                            border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  item['descricao'],
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF333333)),
+                                ),
                               ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                mostrarSaldo ? 'R\$ ${(item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ •••',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF222222)),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  mostrarSaldo ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',') : '•••',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF222222)),
+                                ),
                               ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Container(
-                                  width: 82, // Largura fixa padronizada para alinhar todos os balões perfeitamente
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: item['status'] == 'Recebido' || item['status'] == 'Pago'
-                                        ? const Color(0xFFE8F8F5)
-                                        : const Color(0xFFFEF9E7),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    item['status'],
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                              Expanded(
+                                flex: 2,
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Container(
+                                    width: 82,
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
                                       color: item['status'] == 'Recebido' || item['status'] == 'Pago'
-                                          ? const Color(0xFF117A65)
-                                          : const Color(0xFF7D6608),
+                                          ? const Color(0xFFE8F8F5)
+                                          : const Color(0xFFFEF9E7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      item['status'],
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: item['status'] == 'Recebido' || item['status'] == 'Pago'
+                                            ? const Color(0xFF117A65)
+                                            : const Color(0xFF7D6608),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       )),
-                  // Linha de Total
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: const BoxDecoration(
@@ -204,7 +288,7 @@ class PlanilhaView extends StatelessWidget {
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
                         ),
                         Text(
-                          mostrarSaldo ? 'R\$ ${totalCategoria.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ •••',
+                          mostrarSaldo ? totalCategoria.toStringAsFixed(2).replaceFirst('.', ',') : '•••',
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111111)),
                         ),
                       ],
