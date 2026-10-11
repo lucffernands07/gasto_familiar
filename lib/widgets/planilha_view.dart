@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PlanilhaView extends StatelessWidget {
   final String familyId;
@@ -14,6 +15,10 @@ class PlanilhaView extends StatelessWidget {
 
   Future<void> _registrarHistorico(String acao, String detalhes) async {
     final user = FirebaseAuth.instance.currentUser;
+    final prefs = await SharedPreferences.getInstance();
+    // Puxa o nome do telemóvel definido nas Configurações
+    final nomeDispositivo = prefs.getString('device_nickname') ?? 'Dispositivo Padrão';
+
     await FirebaseFirestore.instance
         .collection('families')
         .doc(familyId)
@@ -22,7 +27,7 @@ class PlanilhaView extends StatelessWidget {
       'acao': acao,
       'detalhes': detalhes,
       'usuario': user?.email ?? 'Usuário',
-      'ip': 'IP Local / Web',
+      'ip': nomeDispositivo, // Grava o nome do aparelho no histórico
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -89,7 +94,7 @@ class PlanilhaView extends StatelessWidget {
                     'valor': novoValor,
                     'status': statusAtual,
                   });
-                  await _registrarHistorico('Edição', 'Transação "$novaDesc" atualizada (R\$ $novoValor - $statusAtual)');
+                  await _registrarHistorico('Edição', 'Transação "$novaDesc" atualizada ($novoValor - $statusAtual)');
                   if (context.mounted) Navigator.pop(context);
                 }
               },
@@ -253,7 +258,7 @@ class PlanilhaView extends StatelessWidget {
                                 child: Text(
                                   mostrarSaldo ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',') : '•••',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF222222)), // Sem negrito
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF222222)),
                                 ),
                               ),
                               Expanded(
