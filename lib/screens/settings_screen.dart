@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
 import '../services/family_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -138,13 +141,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.download, color: Colors.blue),
                   title: const Text('Fazer Backup'),
-                  subtitle: const Text('Exportar dados copiando para o clipboard'),
+                  subtitle: const Text('Baixar arquivo .json de backup'),
                   onTap: () async {
                     setState(() => _isLoading = true);
                     try {
                       final jsonString = await FamilyService().fazerBackup();
-                      await Clipboard.setData(ClipboardData(text: jsonString));
-                      _mostrarMensagem('Backup copiado para a área de transferência!');
+                      final bytes = utf8.encode(jsonString);
+                      
+                      await FileSaver.instance.saveFile(
+                        name: 'gasto_familiar_backup_${DateTime.now().millisecondsSinceEpoch}',
+                        bytes: Uint8List.fromList(bytes),
+                        ext: 'json',
+                        mimeType: MimeType.json,
+                      );
+                      
+                      _mostrarMensagem('Backup baixado com sucesso!');
                     } catch (e) {
                       _mostrarMensagem('Erro ao gerar backup: $e');
                     } finally {
@@ -158,17 +169,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.upload, color: Colors.green),
                   title: const Text('Restaurar Backup'),
-                  subtitle: const Text('Importar dados através de um código JSON'),
+                  subtitle: const Text('Selecionar arquivo .json ou colar texto'),
                   onTap: () {
                     final controller = TextEditingController();
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('Restaurar Backup'),
-                        content: TextField(
-                          controller: controller,
-                          maxLines: 5,
-                          decoration: const InputDecoration(hintText: 'Cole o JSON aqui...'),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+                                icon: const Icon(Icons.folder_open, color: Color(0xFF2C3E50)),
+                                label: const Text('Selecionar Ficheiro .json', style: TextStyle(color: Color(0xFF2C3E50))),
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['json'],
+                                  );
+
+                                  if (result != null && result.files.single.bytes != null) {
+                                    final jsonString = utf8.decode(result.files.single.bytes!);
+                                    setState(() => _isLoading = true);
+                                    try {
+                                      await FamilyService().restaurarBackup(jsonString);
+                                      _mostrarMensagem('Restaurado com sucesso!');
+                                    } catch (e) {
+                                      _mostrarMensagem('Erro ao restaurar: $e');
+                                    } finally {
+                                      setState(() => _isLoading = false);
+                                    }
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              const Text('Ou cole o código JSON abaixo:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: controller,
+                                maxLines: 4,
+                                decoration: const InputDecoration(hintText: 'Cole o JSON aqui...', border: OutlineInputBorder()),
+                              ),
+                            ],
+                          ),
                         ),
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
@@ -188,7 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 }
                               }
                             },
-                            child: const Text('Restaurar'),
+                            child: const Text('Restaurar do Texto'),
                           ),
                         ],
                       ),
