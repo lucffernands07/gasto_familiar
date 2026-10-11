@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/family_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = false;
   final _titleController = TextEditingController();
   final _greetingController = TextEditingController();
+  final _deviceController = TextEditingController();
 
   @override
   void initState() {
@@ -24,10 +26,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _carregarConfigs() async {
     final title = await FamilyService().getAppTitle();
     final greeting = await FamilyService().getGreetingName();
+    
+    // Carregar o nome do dispositivo salvo localmente
+    final prefs = await SharedPreferences.getInstance();
+    final deviceName = prefs.getString('device_nickname') ?? '';
+
     if (mounted) {
       setState(() {
         _titleController.text = title;
         _greetingController.text = greeting;
+        _deviceController.text = deviceName;
       });
     }
   }
@@ -55,6 +63,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : ListView(
               padding: const EdgeInsets.all(20.0),
               children: [
+                const Text('Identificação deste Aparelho', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                const SizedBox(height: 6),
+                const Text('Define um nome para identificar este telemóvel no histórico de edições.', style: TextStyle(fontSize: 12, color: Color(0xFF666666))),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _deviceController,
+                  decoration: const InputDecoration(labelText: 'Nome do Aparelho (Ex: Celular do Lu)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 24),
                 const Text('Personalização da Tela Inicial', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
                 const SizedBox(height: 12),
                 TextField(
@@ -72,9 +89,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () async {
                     await FamilyService().setAppTitle(_titleController.text);
                     await FamilyService().setGreetingName(_greetingController.text);
+                    
+                    // Salvar o nome do dispositivo localmente
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('device_nickname', _deviceController.text.trim());
+
                     _mostrarMensagem('Configurações salvas com sucesso!');
                   },
-                  child: const Text('Salvar Alterações Visuais', style: TextStyle(color: Color(0xFF2C3E50))),
+                  child: const Text('Salvar Alterações', style: TextStyle(color: Color(0xFF2C3E50))),
                 ),
                 const SizedBox(height: 24),
                 const Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
