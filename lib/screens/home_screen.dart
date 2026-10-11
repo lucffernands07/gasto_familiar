@@ -18,7 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
-  String _abaAtiva = 'visao_geral'; // Controla se mostra 'visao_geral' ou 'planilha'
+  String _abaAtiva = 'visao_geral';
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   
   String _familyId = 'familia_default';
@@ -75,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 24),
               
-              // Conteúdo dinâmico com transição lateral suave dependendo da aba selecionada
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (Widget child, Animation<double> animation) {
@@ -490,4 +489,44 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+                TextField(
+                  controller: descricaoController,
+                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Mercado)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
+                final descricao = descricaoController.text.trim();
+
+                if (valor > 0) {
+                  final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
+                  await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
+                    'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
+                    'valor': valor,
+                    'tipo': tipoSelecionado,
+                    'createdAt': FieldValue.serverTimestamp(),
+                  });
+
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
