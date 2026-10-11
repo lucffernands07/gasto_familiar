@@ -6,7 +6,7 @@ import '../services/family_service.dart';
 class HeroCard extends StatefulWidget {
   final bool mostrarSaldo;
   final VoidCallback onToggleVisibility;
-  final String abaAtiva; // 'visao_geral' ou 'planilha'
+  final String abaAtiva;
   final ValueChanged<String> onAbaChanged;
 
   const HeroCard({
@@ -66,23 +66,34 @@ class _HeroCardState extends State<HeroCard> {
               .collection('transactions')
               .snapshots(),
           builder: (context, txSnapshot) {
-            double totalReceitas = 0.0;
-            double totalGastos = 0.0;
+            double receitasEfetivas = 0.0; // Apenas status 'Recebido'
+            double gastosEfetivos = 0.0;   // Apenas status 'Pago'
+            double receitasPrevias = 0.0;  // Todas as receitas
+            double gastosPrevios = 0.0;    // Todas as despesas
 
             if (txSnapshot.hasData) {
               for (var doc in txSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
                 final amount = (data['valor'] ?? 0.0).toDouble();
                 final tipo = data['tipo'] ?? 'despesa';
+                final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
+
                 if (tipo == 'receita') {
-                  totalReceitas += amount;
+                  receitasPrevias += amount;
+                  if (status == 'Recebido') {
+                    receitasEfetivas += amount;
+                  }
                 } else {
-                  totalGastos += amount;
+                  gastosPrevios += amount;
+                  if (status == 'Pago') {
+                    gastosEfetivos += amount;
+                  }
                 }
               }
             }
 
-            final saldoTotal = totalMembros + totalReceitas - totalGastos;
+            final saldoTotal = totalMembros + receitasEfetivas - gastosEfetivos;
+            final saldoPrevio = totalMembros + receitasPrevias - gastosPrevios;
 
             return Container(
               width: double.infinity,
@@ -119,7 +130,6 @@ class _HeroCardState extends State<HeroCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // Abas Visão Geral / Planilha com indicador de bolinha verde
                       Row(
                         children: [
                           GestureDetector(
@@ -225,6 +235,18 @@ class _HeroCardState extends State<HeroCard> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 4),
+                        // Saldo Prévio (sem negrito e fonte menor)
+                        Text(
+                          widget.mostrarSaldo
+                              ? 'Saldo prévio: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
+                              : 'Saldo prévio: R\$ ••••••',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -237,15 +259,15 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   _buildItemCard(
-                    'Receitas',
-                    widget.mostrarSaldo ? 'R\$ ${totalReceitas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                    'Receitas (Recebidas)',
+                    widget.mostrarSaldo ? 'R\$ ${receitasEfetivas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                     const Color(0xFFA8E6CF),
                     Icons.arrow_upward_rounded,
                   ),
                   const SizedBox(height: 10),
                   _buildItemCard(
-                    'Gastos',
-                    widget.mostrarSaldo ? 'R\$ ${totalGastos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                    'Gastos (Pagos)',
+                    widget.mostrarSaldo ? 'R\$ ${gastosEfetivos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                     const Color(0xFFFF8B94),
                     Icons.arrow_downward_rounded,
                   ),
