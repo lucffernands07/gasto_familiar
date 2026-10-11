@@ -69,36 +69,36 @@ class FamilyService {
     final transactionsSnapshot = await _db.collection('families').doc(familyId).collection('transactions').get();
     final historySnapshot = await _db.collection('families').doc(familyId).collection('history').get();
 
-    // Mapeamento limpo e seguro incluindo membros, transações e histórico
+    // Validação e estruturação explícita para o Backup
     final Map<String, dynamic> backupData = {
       'familyInfo': familyDoc.exists && familyDoc.data() != null ? Map<String, dynamic>.from(familyDoc.data()!) : {},
       'members': membersSnapshot.docs.map((doc) {
         final data = doc.data();
         return {
           'id': doc.id,
-          'nome': data['nome'] ?? '',
+          'nome': data['nome']?.toString() ?? 'Sem Nome',
           'saldo': (data['saldo'] ?? 0.0).toDouble(),
-          'imageUrl': data['imageUrl'] ?? '',
+          'imageUrl': data['imageUrl']?.toString() ?? '',
         };
       }).toList(),
       'transactions': transactionsSnapshot.docs.map((doc) {
         final data = doc.data();
         return {
           'id': doc.id,
-          'categoria': data['categoria'] ?? '',
-          'descricao': data['descricao'] ?? '',
+          'categoria': data['categoria']?.toString() ?? 'Geral',
+          'descricao': data['descricao']?.toString() ?? '',
           'valor': (data['valor'] ?? 0.0).toDouble(),
-          'tipo': data['tipo'] ?? 'despesa',
-          'status': data['status'] ?? 'Recebido',
+          'tipo': data['tipo']?.toString() ?? 'despesa',
+          'status': data['status']?.toString() ?? 'Pendente',
         };
       }).toList(),
       'history': historySnapshot.docs.map((doc) {
         final data = doc.data();
         return {
-          'acao': data['acao'] ?? '',
-          'detalhes': data['detalhes'] ?? '',
-          'usuario': data['usuario'] ?? '',
-          'ip': data['ip'] ?? '',
+          'acao': data['acao']?.toString() ?? 'Ação',
+          'detalhes': data['detalhes']?.toString() ?? '',
+          'usuario': data['usuario']?.toString() ?? '',
+          'ip': data['ip']?.toString() ?? '',
         };
       }).toList(),
       'backupDate': DateTime.now().toIso8601String(),
@@ -115,54 +115,68 @@ class FamilyService {
     final familyId = user.uid;
     final familyRef = _db.collection('families').doc(familyId);
 
-    // Limpa a base de dados atual
+    // Limpa a base atual antes de aplicar os dados validados
     await zerarBancoDados();
 
-    // Restaura as informações da família
+    // Valida e restaura informações gerais da família
     if (data['familyInfo'] != null && (data['familyInfo'] as Map).isNotEmpty) {
       await familyRef.set(Map<String, dynamic>.from(data['familyInfo']));
     }
 
-    // Restaura os membros (Visão Geral)
-    if (data['members'] != null) {
+    // Valida e restaura os membros
+    if (data['members'] != null && data['members'] is List) {
       for (var member in data['members']) {
-        final String id = member['id'] ?? _db.collection('families').doc().id;
-        final Map<String, dynamic> memberData = Map<String, dynamic>.from(member);
-        memberData.remove('id');
-        await familyRef.collection('members').doc(id).set(memberData);
+        if (member is Map) {
+          final String id = member['id']?.toString() ?? _db.collection('families').doc().id;
+          await familyRef.collection('members').doc(id).set({
+            'nome': member['nome']?.toString() ?? 'Sem Nome',
+            'saldo': (member['saldo'] ?? 0.0).toDouble(),
+            'imageUrl': member['imageUrl']?.toString() ?? '',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
       }
     }
 
-    // Restaura as transações (Planilha)
-    if (data['transactions'] != null) {
+    // Valida e restaura as transações (Planilha) preservando IDs e campos exatos
+    if (data['transactions'] != null && data['transactions'] is List) {
       for (var tx in data['transactions']) {
-        final String id = tx['id'] ?? _db.collection('families').doc().id;
-        final Map<String, dynamic> txData = Map<String, dynamic>.from(tx);
-        txData.remove('id');
-        await familyRef.collection('transactions').doc(id).set(txData);
+        if (tx is Map) {
+          final String id = tx['id']?.toString() ?? _db.collection('families').doc().id;
+          await familyRef.collection('transactions').doc(id).set({
+            'categoria': tx['categoria']?.toString() ?? 'Geral',
+            'descricao': tx['descricao']?.toString() ?? '',
+            'valor': (tx['valor'] ?? 0.0).toDouble(),
+            'tipo': tx['tipo']?.toString() ?? 'despesa',
+            'status': tx['status']?.toString() ?? 'Pendente',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
       }
     }
 
-    // Restaura o histórico antigo que veio no backup
-    if (data['history'] != null) {
+    // Valida e restaura o histórico antigo
+    if (data['history'] != null && data['history'] is List) {
       for (var hist in data['history']) {
-        await familyRef.collection('history').add({
-          'acao': hist['acao'] ?? 'Histórico',
-          'detalhes': hist['detalhes'] ?? '',
-          'usuario': hist['usuario'] ?? user.email ?? '',
-          'ip': hist['ip'] ?? 'Sistema',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        if (hist is Map) {
+          await familyRef.collection('history').add({
+            'acao': hist['acao']?.toString() ?? 'Histórico',
+            'detalhes': hist['detalhes']?.toString() ?? '',
+            'usuario': hist['usuario']?.toString() ?? user.email ?? '',
+            'ip': hist['ip']?.toString() ?? 'Sistema',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
       }
     }
 
-    // Adiciona o novo registo automático informando que o banco foi restaurado e por qual dispositivo
+    // Identifica o dispositivo atual e regista a auditoria de restauração bem-sucedida
     final prefs = await SharedPreferences.getInstance();
     final nomeDispositivo = prefs.getString('device_nickname') ?? 'Dispositivo Padrão';
 
     await familyRef.collection('history').add({
       'acao': 'Restauração',
-      'detalhes': 'Banco de dados restaurado através de arquivo JSON',
+      'detalhes': 'Banco de dados restaurado e validado via arquivo JSON',
       'usuario': user.email ?? 'Usuário',
       'ip': nomeDispositivo,
       'createdAt': FieldValue.serverTimestamp(),
