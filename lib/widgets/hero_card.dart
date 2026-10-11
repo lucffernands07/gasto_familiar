@@ -239,8 +239,8 @@ class _HeroCardState extends State<HeroCard> {
                         // Saldo Prévio (sem negrito e fonte menor)
                         Text(
                           widget.mostrarSaldo
-                              ? 'Saldo prévio: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
-                              : 'Saldo prévio: R\$ ••••••',
+                              ? 'Saldo Previsto: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
+                              : 'Saldo Previsto: R\$ ••••••',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.normal,
