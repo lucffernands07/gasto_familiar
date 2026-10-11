@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/membro.dart';
 
@@ -37,7 +38,9 @@ class MembroTile extends StatelessWidget {
             ),
             child: CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage(membro.imageUrl),
+              backgroundImage: membro.imageUrl.startsWith('data:image')
+                  ? MemoryImage(base64Decode(membro.imageUrl.split(',')[1])) as ImageProvider
+                  : NetworkImage(membro.imageUrl),
             ),
           ),
           const SizedBox(width: 14),
