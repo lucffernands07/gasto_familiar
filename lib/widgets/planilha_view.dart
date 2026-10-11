@@ -77,7 +77,6 @@ class PlanilhaView extends StatelessWidget {
             final tipo = tiposPorCategoria[categoria] ?? 'despesa';
             final isReceita = tipo == 'receita';
 
-            // Cor de cabeçalho: verde para receita, vermelho para despesa
             final Color corHeader = isReceita ? const Color(0xFFA8E6CF) : const Color(0xFFFF8B94);
             final Color corTextoHeader = isReceita ? const Color(0xFF1B4D3E) : const Color(0xFF5C1D24);
 
@@ -110,17 +109,28 @@ class PlanilhaView extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          categoria.toUpperCase(),
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: corTextoHeader, letterSpacing: 0.5),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            categoria.toUpperCase(),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: corTextoHeader, letterSpacing: 0.5),
+                          ),
                         ),
-                        Text(
-                          'R\$',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: corTextoHeader),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'VALOR R\$',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: corTextoHeader),
+                          ),
                         ),
-                        Text(
-                          'STATUS',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: corTextoHeader),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'STATUS',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: corTextoHeader),
+                          ),
                         ),
                       ],
                     ),
@@ -145,29 +155,34 @@ class PlanilhaView extends StatelessWidget {
                               flex: 2,
                               child: Text(
                                 mostrarSaldo ? 'R\$ ${(item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ •••',
-                                textAlign: TextAlign.right,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF222222)),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: item['status'] == 'Recebido' || item['status'] == 'Pago'
-                                    ? const Color(0xFFE8F8F5)
-                                    : const Color(0xFFFEF9E7),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                item['status'],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: item['status'] == 'Recebido' || item['status'] == 'Pago'
-                                      .toString()
-                                      .contains('true') // fallback
-                                      ? const Color(0xFF117A65)
-                                      : const Color(0xFF7D6608),
+                            Expanded(
+                              flex: 2,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Container(
+                                  width: 82, // Largura fixa padronizada para alinhar todos os balões perfeitamente
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: item['status'] == 'Recebido' || item['status'] == 'Pago'
+                                        ? const Color(0xFFE8F8F5)
+                                        : const Color(0xFFFEF9E7),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    item['status'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: item['status'] == 'Recebido' || item['status'] == 'Pago'
+                                          ? const Color(0xFF117A65)
+                                          : const Color(0xFF7D6608),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
