@@ -372,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () => _mostrarDialogLancarTransacao(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFD4E6F1),
           elevation: 4,
@@ -384,6 +384,86 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.add, color: Color(0xFF2C3E50), size: 22),
             SizedBox(width: 6),
             Text('Lançar / Editar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF2C3E50))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarDialogLancarTransacao(BuildContext context) {
+    final valorController = TextEditingController();
+    final descricaoController = TextEditingController();
+    String tipoSelecionado = 'despesa';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          backgroundColor: const Color(0xFFFAF6EE),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Nova Transação', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Despesa'),
+                      selected: tipoSelecionado == 'despesa',
+                      selectedColor: const Color(0xFFFF8B94),
+                      onSelected: (selected) {
+                        setStateDialog(() => tipoSelecionado = 'despesa');
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    ChoiceChip(
+                      label: const Text('Receita'),
+                      selected: tipoSelecionado == 'receita',
+                      selectedColor: const Color(0xFFA8E6CF),
+                      onSelected: (selected) {
+                        setStateDialog(() => tipoSelecionado = 'receita');
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descricaoController,
+                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Mercado)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
+                final descricao = descricaoController.text.trim();
+
+                if (valor > 0) {
+                  final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
+                  await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
+                    'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
+                    'valor': valor,
+                    'tipo': tipoSelecionado,
+                    'createdAt': FieldValue.serverTimestamp(),
+                  });
+
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
           ],
         ),
       ),
