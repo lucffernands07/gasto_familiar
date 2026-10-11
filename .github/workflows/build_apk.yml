@@ -31,6 +31,12 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      - name: Gerar icone da aplicacao
+        run: dart run flutter_launcher_icons
+
+      - name: Gerar ecra de abertura (Splash Screen)
+        run: dart run flutter_native_splash:create
+
       # --- GERAR BUILD WEB PARA O GITHUB PAGES ---
       - name: Habilitar plataforma Web
         run: flutter create . --platforms web
