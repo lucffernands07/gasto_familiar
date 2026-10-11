@@ -66,10 +66,10 @@ class _HeroCardState extends State<HeroCard> {
               .collection('transactions')
               .snapshots(),
           builder: (context, txSnapshot) {
-            double receitasEfetivas = 0.0; // Apenas status 'Recebido'
-            double gastosEfetivos = 0.0;   // Apenas status 'Pago'
-            double receitasPrevias = 0.0;  // Todas as receitas
-            double gastosPrevios = 0.0;    // Todas as despesas
+            double receitasEfetivas = 0.0;
+            double gastosEfetivos = 0.0;
+            double receitasPrevias = 0.0;
+            double gastosPrevios = 0.0;
 
             if (txSnapshot.hasData) {
               for (var doc in txSnapshot.data!.docs) {
@@ -92,8 +92,9 @@ class _HeroCardState extends State<HeroCard> {
               }
             }
 
-            final saldoTotal = totalMembros + receitasEfetivas - gastosEfetivos;
-            final saldoPrevio = totalMembros + receitasPrevias - gastosPrevios;
+            // O saldo total e previsto agora baseiam-se estritamente nas transações (sem misturar com saldo de membros)
+            final saldoTotal = receitasEfetivas - gastosEfetivos;
+            final saldoPrevio = receitasPrevias - gastosPrevios;
 
             return Container(
               width: double.infinity,
@@ -236,11 +237,10 @@ class _HeroCardState extends State<HeroCard> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        // Saldo Prévio (sem negrito e fonte menor)
                         Text(
                           widget.mostrarSaldo
-                              ? 'Saldo Previsto: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
-                              : 'Saldo Previsto: R\$ ••••••',
+                              ? 'Saldo previsto: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
+                              : 'Saldo previsto: R\$ ••••••',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.normal,
@@ -252,7 +252,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 20),
                   _buildItemCard(
-                    'Membros / Saldo Inicial',
+                    'Saldo Família',
                     widget.mostrarSaldo ? 'R\$ ${totalMembros.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                     const Color(0xFF80DEEA),
                     Icons.people_outline,
