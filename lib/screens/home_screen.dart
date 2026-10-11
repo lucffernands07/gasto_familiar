@@ -61,14 +61,9 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildTopBar(context, userPhoto, fallbackLetter),
               const SizedBox(height: 20),
               
-              StreamBuilder<QuerySnapshot>(
-                stream: _db.collection('families').doc(_familyId).collection('members').snapshots(),
-                builder: (context, snapshot) {
-                  return HeroCard(
-                    mostrarSaldo: _mostrarSaldo,
-                    onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
-                  );
-                },
+              HeroCard(
+                mostrarSaldo: _mostrarSaldo,
+                onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
               ),
 
               const SizedBox(height: 24),
@@ -96,18 +91,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
 
                   final docs = snapshot.data!.docs;
-                  final membros = docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return Membro(
-                      nome: data['nome'] ?? 'Membro',
-                      saldo: (data['saldo'] ?? 0.0).toDouble(),
-                      imageUrl: data['imageUrl'] ?? 'https://i.pravatar.cc/150?img=12',
-                      borderColor: const Color(0xFFA8DADC),
-                    );
-                  }).toList();
-
                   return Column(
-                    children: membros.map((membro) => MembroTile(membro: membro, mostrarSaldo: _mostrarSaldo)).toList(),
+                    children: docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final membroId = doc.id;
+                      final membro = Membro(
+                        nome: data['nome'] ?? 'Membro',
+                        saldo: (data['saldo'] ?? 0.0).toDouble(),
+                        imageUrl: data['imageUrl'] ?? 'https://i.pravatar.cc/150?img=12',
+                        borderColor: const Color(0xFFA8DADC),
+                      );
+
+                      return MembroTile(
+                        memberId: membroId,
+                        membro: membro,
+                        mostrarSaldo: _mostrarSaldo,
+                        onEdit: () => _mostrarDialogEditarMembro(context, membroId, data),
+                        onDelete: () => _excluirMembro(context, membroId),
+                      );
+                    }).toList(),
                   );
                 },
               ),
@@ -254,6 +256,113 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _mostrarDialogEditarMembro(BuildContext context, String membroId, Map<String, dynamic> dadosAtuais) {
+    final nomeController = TextEditingController(text: dadosAtuais['nome'] ?? '');
+    final saldoController = TextEditingController(text: (dadosAtuais['saldo'] ?? 0.0).toString());
+    String? fotoBase64Selecionada = dadosAtuais['imageUrl'];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          backgroundColor: const Color(0xFFFAF6EE),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Editar Membro', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    final pickedFile = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 400,
+                      maxHeight: 400,
+                      imageQuality: 80,
+                    );
+                    if (pickedFile != null) {
+                      final bytes = await pickedFile.readAsBytes();
+                      setStateDialog(() {
+                        fotoBase64Selecionada = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+                      });
+                    }
+                  },
+                  child: CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.white,
+                    backgroundImage: fotoBase64Selecionada != null && fotoBase64Selecionada!.startsWith('data:image')
+                        ? MemoryImage(base64Decode(fotoBase64Selecionada!.split(',')[1]))
+                        : (fotoBase64Selecionada != null ? NetworkImage(fotoBase64Selecionada!) as ImageProvider : null),
+                    child: fotoBase64Selecionada == null
+                        ? const Icon(Icons.add_a_photo, size: 28, color: Colors.grey)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text('Toque para alterar foto', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(labelText: 'Nome do Membro', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: saldoController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Saldo (R\$)', border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                final nome = nomeController.text.trim();
+                final saldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
+
+                if (nome.isNotEmpty) {
+                  await _db.collection('families').doc(_familyId).collection('members').doc(membroId).update({
+                    'nome': nome,
+                    'saldo': saldo,
+                    'imageUrl': fotoBase64Selecionada ?? 'https://i.pravatar.cc/150?img=12',
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _excluirMembro(BuildContext context, String membroId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Membro'),
+        content: const Text('Tem certeza que deseja remover este membro?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+              Navigator.pop(context);
+              await _db.collection('families').doc(_familyId).collection('members').doc(membroId).delete();
+            },
+            child: const Text('Excluir', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
