@@ -114,11 +114,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   tileColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.download, color: Colors.blue),
+                  title: const Text('Fazer Backup'),
+                  subtitle: const Text('Exportar dados copiando para o clipboard'),
+                  onTap: () async {
+                    setState(() => _isLoading = true);
+                    try {
+                      final jsonString = await FamilyService().fazerBackup();
+                      await Clipboard.setData(ClipboardData(text: jsonString));
+                      _mostrarMensagem('Backup copiado para a área de transferência!');
+                    } catch (e) {
+                      _mostrarMensagem('Erro ao gerar backup: $e');
+                    } finally {
+                      setState(() => _isLoading = false);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  tileColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.upload, color: Colors.green),
+                  title: const Text('Restaurar Backup'),
+                  subtitle: const Text('Importar dados através de um código JSON'),
+                  onTap: () {
+                    final controller = TextEditingController();
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Restaurar Backup'),
+                        content: TextField(
+                          controller: controller,
+                          maxLines: 5,
+                          decoration: const InputDecoration(hintText: 'Cole o JSON aqui...'),
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final text = controller.text.trim();
+                              if (text.isNotEmpty) {
+                                Navigator.pop(context);
+                                setState(() => _isLoading = true);
+                                try {
+                                  await FamilyService().restaurarBackup(text);
+                                  _mostrarMensagem('Restaurado com sucesso!');
+                                } catch (e) {
+                                  _mostrarMensagem('Erro ao restaurar: $e');
+                                } finally {
+                                  setState(() => _isLoading = false);
+                                }
+                              }
+                            },
+                            child: const Text('Restaurar'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  tileColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.delete_forever, color: Colors.redAccent),
                   title: const Text('Zerar Banco de Dados', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                  onPressed: () {},
+                  subtitle: const Text('Apagar todas as informações e transações'),
                   onTap: () async {
-                    // Confirmação para zerar
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
