@@ -6,11 +6,15 @@ import '../services/family_service.dart';
 class HeroCard extends StatefulWidget {
   final bool mostrarSaldo;
   final VoidCallback onToggleVisibility;
+  final String abaAtiva; // 'visao_geral' ou 'planilha'
+  final ValueChanged<String> onAbaChanged;
 
   const HeroCard({
     super.key,
     required this.mostrarSaldo,
     required this.onToggleVisibility,
+    required this.abaAtiva,
+    required this.onAbaChanged,
   });
 
   @override
@@ -115,13 +119,63 @@ class _HeroCardState extends State<HeroCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Text(
-                        'Visão Geral',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF666666),
-                        ),
+                      // Abas Visão Geral / Planilha com indicador de bolinha verde
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => widget.onAbaChanged('visao_geral'),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Visão Geral',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: widget.abaAtiva == 'visao_geral' ? FontWeight.bold : FontWeight.w500,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                                if (widget.abaAtiva == 'visao_geral') ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          GestureDetector(
+                            onTap: () => widget.onAbaChanged('planilha'),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Planilha',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: widget.abaAtiva == 'planilha' ? FontWeight.bold : FontWeight.w500,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                                if (widget.abaAtiva == 'planilha') ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
