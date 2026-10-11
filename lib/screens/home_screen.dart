@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onDeleteMember: _excluirMembro,
                           onCreateMember: () => _mostrarDialogCriarMembro(context),
                         )
-                      : const PlanilhaView(),
+                      : PlanilhaView(familyId: _familyId, mostrarSaldo: _mostrarSaldo),
                 ),
               ),
               const SizedBox(height: 80),
@@ -298,7 +298,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _mostrarDialogLancarTransacao(BuildContext context) {
     final valorController = TextEditingController();
     final descricaoController = TextEditingController();
-    String tipoSelecionado = 'despesa';
+    final categoriaController = TextEditingController(text: 'Receita');
+    String tipoSelecionado = 'receita'; // Padrão receita
+    String statusSelecionado = 'Recebido'; // Padrão
 
     showDialog(
       context: context,
@@ -315,24 +317,65 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ChoiceChip(
-                      label: const Text('Despesa'),
-                      selected: tipoSelecionado == 'despesa',
-                      selectedColor: const Color(0xFFFF8B94),
-                      onSelected: (selected) => setStateDialog(() => tipoSelecionado = 'despesa'),
-                    ),
-                    const SizedBox(width: 12),
-                    ChoiceChip(
                       label: const Text('Receita'),
                       selected: tipoSelecionado == 'receita',
                       selectedColor: const Color(0xFFA8E6CF),
-                      onSelected: (selected) => setStateDialog(() => tipoSelecionado = 'receita'),
+                      onSelected: (selected) {
+                        setStateDialog(() {
+                          tipoSelecionado = 'receita';
+                          categoriaController.text = 'Receita';
+                          statusSelecionado = 'Recebido';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    ChoiceChip(
+                      label: const Text('Despesa'),
+                      selected: tipoSelecionado == 'despesa',
+                      selectedColor: const Color(0xFFFF8B94),
+                      onSelected: (selected) {
+                        setStateDialog(() {
+                          tipoSelecionado = 'despesa';
+                          categoriaController.text = 'Despesas Fixas';
+                          statusSelecionado = 'Pago';
+                        });
+                      },
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextField(controller: descricaoController, decoration: const InputDecoration(labelText: 'Descrição (Ex: Mercado)', border: OutlineInputBorder())),
+                TextField(
+                  controller: categoriaController,
+                  decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder())),
+                TextField(
+                  controller: descricaoController,
+                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Salário / Luz)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: statusSelecionado,
+                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
+                  items: tipoSelecionado == 'receita'
+                      ? const [
+                          DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
+                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                        ]
+                      : const [
+                          DropdownMenuItem(value: 'Pago', child: Text('Pago')),
+                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                        ],
+                  onChanged: (val) {
+                    if (val != null) setStateDialog(() => statusSelecionado = val);
+                  },
+                ),
               ],
             ),
           ),
@@ -342,14 +385,19 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () async {
                 final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
                 final descricao = descricaoController.text.trim();
+                final categoria = categoriaController.text.trim();
+
                 if (valor > 0) {
                   final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
                   await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
+                    'categoria': categoria.isNotEmpty ? categoria : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesas'),
                     'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
                     'valor': valor,
                     'tipo': tipoSelecionado,
+                    'status': statusSelecionado,
                     'createdAt': FieldValue.serverTimestamp(),
                   });
+
                   if (context.mounted) Navigator.pop(context);
                 }
               },
