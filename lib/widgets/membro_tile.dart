@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import '../models/membro.dart';
 
 class MembroTile extends StatelessWidget {
+  final String memberId;
   final Membro membro;
   final bool mostrarSaldo;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const MembroTile({
     super.key,
+    required this.memberId,
     required this.membro,
     required this.mostrarSaldo,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -44,27 +50,44 @@ class MembroTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${membro.nome}:',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  mostrarSaldo
+                      ? 'R\$ ${membro.saldo.toStringAsFixed(2).replaceAll('.', ',')}'
+                      : 'R\$ ••••••',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF555555),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${membro.nome}:',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF333333),
-                ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.blueGrey),
+                onPressed: onEdit,
+                tooltip: 'Editar Membro',
               ),
-              const SizedBox(height: 2),
-              Text(
-                mostrarSaldo
-                    ? 'R\$ ${membro.saldo.toStringAsFixed(2).replaceAll('.', ',')}'
-                    : 'R\$ ••••••',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF555555),
-                ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                onPressed: onDelete,
+                tooltip: 'Excluir Membro',
               ),
             ],
           ),
