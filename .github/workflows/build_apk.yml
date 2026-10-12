@@ -31,9 +31,7 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      - name: Habilitar plataforma Android
-        run: flutter create . --platforms android
-
+      # Gerar ícone e splash screen de forma limpa
       - name: Gerar icone da aplicacao
         run: dart run flutter_launcher_icons
 
@@ -53,10 +51,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
 
-      # --- GERAR BUILD ANDROID (APK) [DESATIVADO TEMPORARIAMENTE] ---
-      - name: Habilitar plataforma Android
-        run: flutter create . --platforms android
-
+      # --- GERAR BUILD ANDROID (APK) ---
       - name: Gerar APK (Release)
         run: flutter build apk --release
 
@@ -65,4 +60,4 @@ jobs:
         with:
           name: app-familia-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-      
+          
