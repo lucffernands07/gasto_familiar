@@ -188,10 +188,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Navigator.pop(context);
                                   
                                   // Utilização moderna: retorna List<PlatformFile>
-                                  List<PlatformFile> files = await FilePicker.platform.pickFiles(
+                                  List<PlatformFile> files = await FilePicker.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
-                                  );
+                                  );         
 
                                   if (files.isNotEmpty) {
                                     PlatformFile file = files.first;
