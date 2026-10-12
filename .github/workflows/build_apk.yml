@@ -63,6 +63,17 @@ jobs:
       - name: Gerar APK (Release)
         run: flutter build apk --release
 
+      # --- 3. EXTRAIR E EXIBIR A SHA-1 NOS LOGS ---
+      - name: Exibir SHA-1 do APK nos Logs
+        run: |
+          echo "=== EXTRACAO DA ASSINATURA DO APK ==="
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk || jarsigner -verify -verbose -certs build/app/outputs/flutter-apk/app-release.apk
+          else
+            echo "APK nao encontrado!"
+          fi
+          echo "====================================="
+
       - name: Disponibilizar APK para Download
         uses: actions/upload-artifact@v4
         with:
