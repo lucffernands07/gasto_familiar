@@ -31,8 +31,8 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      # --- CRIAR PLATAFORMA ANDROID TEMPORÁRIA E AJUSTAR SDK PARA 36 ---
-      - name: Habilitar plataforma Android e ajustar SDK
+      # --- CRIAR PLATAFORMA ANDROID TEMPORÁRIA E AJUSTAR SDK/GRADLE ---
+      - name: Habilitar plataforma Android e ajustar dependencias nativas
         run: |
           flutter create . --platforms android
           # Atualiza automaticamente o compileSdk e targetSdk para 36 no build.gradle gerado
@@ -40,6 +40,8 @@ jobs:
           sed -i 's/targetSdk [0-9]*/targetSdk 36/g' android/app/build.gradle || true
           sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' android/app/build.gradle || true
           sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 36/g' android/app/build.gradle || true
+          # Força uma versão estável do Gradle Wrapper (versão 8.4) para evitar conflitos de AGP
+          sed -i 's/distributionUrl=.*$/distributionUrl=https\:\/\/services.gradle.org\/distributions\/gradle-8.4-bin.zip/g' android/gradle/wrapper/gradle-wrapper.properties || true
 
       # Gerar ícone e splash screen
       - name: Gerar icone da aplicacao
