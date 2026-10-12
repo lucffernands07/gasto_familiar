@@ -186,9 +186,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 label: const Text('Selecionar Ficheiro .json', style: TextStyle(color: Color(0xFF2C3E50))),
                                 onPressed: () async {
                                   Navigator.pop(context);
-                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                  
+                                  // Chamada atualizada e totalmente compatível com o file_picker ^13.1.0
+                                  final FilePickerResult? result = await FilePicker.platform.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
+                                    withData: true,
                                   );
 
                                   if (result != null && result.files.single.bytes != null) {
