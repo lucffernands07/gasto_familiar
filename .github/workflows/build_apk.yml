@@ -67,25 +67,17 @@ jobs:
       - name: Exibir SHA-1 do APK nos Logs
         run: |
           echo "=== EXTRACAO DA ASSINATURA DO APK ==="
-          # Usa o keytool diretamente no APK ou localiza a keystore de debug padrão do Android
+          # Cria a keystore de debug padrão no runner para garantir consistência
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug, O=Android, C=US" || true
+          
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            # Tenta extrair usando o apksigner do Android SDK se disponível, ou keytool se assinado
-            unzip -q build/app/outputs/flutter-apk/app-release.apk -d temp_apk
-            if [ -f "temp_apk/META-INF/CERT.RSA" ]; then
-              keytool -printcert -file temp_apk/META-INF/CERT.RSA
-            elif [ -f "temp_apk/META-INF/CERT.SF" ]; then
-              keytool -printcert -file temp_apk/META-INF/CERT.SF
-            else
-              echo "APK nao possui certificado de release embutido (assinado com chave de debug do Gradle)."
-              # Localiza e imprime o SHA-1 da chave de debug padrão do runner do GitHub
-              keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android || true
-            fi
-            rm -rf temp_apk
+            # Exibe a SHA1 exata da keystore utilizada
+            keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android
           else
             echo "APK nao encontrado!"
           fi
           echo "====================================="
-
 
       - name: Disponibilizar APK para Download
         uses: actions/upload-artifact@v4
