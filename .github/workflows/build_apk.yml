@@ -31,9 +31,15 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      # --- CRIAR PLATAFORMA ANDROID TEMPORÁRIA PARA OS ÍCONES ---
-      - name: Habilitar plataforma Android
-        run: flutter create . --platforms android
+      # --- CRIAR PLATAFORMA ANDROID TEMPORÁRIA E AJUSTAR SDK PARA 36 ---
+      - name: Habilitar plataforma Android e ajustar SDK
+        run: |
+          flutter create . --platforms android
+          # Atualiza automaticamente o compileSdk e targetSdk para 36 no build.gradle gerado
+          sed -i 's/compileSdk [0-9]*/compileSdk 36/g' android/app/build.gradle || true
+          sed -i 's/targetSdk [0-9]*/targetSdk 36/g' android/app/build.gradle || true
+          sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' android/app/build.gradle || true
+          sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 36/g' android/app/build.gradle || true
 
       # Gerar ícone e splash screen
       - name: Gerar icone da aplicacao
