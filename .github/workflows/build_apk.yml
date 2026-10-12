@@ -52,7 +52,7 @@ jobs:
           sed -i 's/targetSdk [0-9]*/targetSdk 36/g' android/app/build.gradle || true
           sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' android/app/build.gradle || true
           sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 36/g' android/app/build.gradle || true
-          sed -i 's/distributionUrl=.*$/distributionUrl=https\:\/\/services.gradle.org\/distributions\/gradle-8.4-bin.zip/g' android/gradle/wrapper/gradle-wrapper.properties || true
+          sed -i 's/distributionUrl=.*$/distributionUrl=https\:\/\/services.gradle.org\/distributions\/gradle-9.3.1-bin.zip/g' android/gradle/wrapper/gradle-wrapper.properties || true
 
       - name: Gerar icone da aplicacao
         run: dart run flutter_launcher_icons
