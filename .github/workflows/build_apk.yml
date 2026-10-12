@@ -31,7 +31,11 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      # Gerar ícone e splash screen de forma limpa
+      # --- CRIAR PLATAFORMA ANDROID TEMPORÁRIA PARA OS ÍCONES ---
+      - name: Habilitar plataforma Android
+        run: flutter create . --platforms android
+
+      # Gerar ícone e splash screen
       - name: Gerar icone da aplicacao
         run: dart run flutter_launcher_icons
 
