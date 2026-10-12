@@ -31,6 +31,9 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      - name: Habilitar plataforma Android
+        run: flutter create . --platforms android
+
       - name: Gerar icone da aplicacao
         run: dart run flutter_launcher_icons
 
