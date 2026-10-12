@@ -44,11 +44,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
 
-      # --- 2. GERAR ANDROID, ÍCONES E APK DEPOIS ---
+      # --- 2. GERAR ANDROID, INJETAR GOOGLE-SERVICES E ASSINAR ---
       - name: Habilitar plataforma Android e ajustar dependencias nativas
         run: |
           flutter create . --platforms android
-          # Injeta automaticamente o google-services.json gerado pelo Firebase a partir do Secret
+          # Injeta o google-services.json a partir do Secret
           echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
           
           sed -i 's/compileSdk [0-9]*/compileSdk 36/g' android/app/build.gradle || true
@@ -63,23 +63,24 @@ jobs:
       - name: Gerar ecra de abertura (Splash Screen)
         run: dart run flutter_native_splash:create
 
-      - name: Gerar APK (Release)
-        run: flutter build apk --release
+      # --- GERAR KEYSTORE FIXA E COMPILAR EM MODO DEBUG (ASSINADO) ---
+      - name: Configurar Keystore e Compilar APK
+        run: |
+          # Cria a keystore com parâmetros 100% estáticos (gera sempre a mesma SHA-1)
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug, O=Android, C=US"
+          
+          # Compila o APK em modo debug (que obrigatoriamente usa a debug.keystore acima)
+          flutter build apk --debug
+          
+          # Copia para o caminho de release para manter o nome do artefato
+          mkdir -p build/app/outputs/flutter-apk/
+          cp build/app/outputs/flutter-apk/app-debug.apk build/app/outputs/flutter-apk/app-release.apk
 
-      # --- 3. EXTRAIR E EXIBIR A SHA-1 NOS LOGS ---
-      - name: Exibir SHA-1 do APK nos Logs
+      - name: Exibir SHA-1 do APK nos Logs (Validação)
         run: |
           echo "=== EXTRACAO DA ASSINATURA DO APK ==="
-          # Cria a keystore de debug padrão no runner para garantir consistência
-          mkdir -p ~/.android
-          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug, O=Android, C=US" || true
-          
-          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            # Exibe a SHA1 exata da keystore utilizada
-            keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android
-          else
-            echo "APK nao encontrado!"
-          fi
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android
           echo "====================================="
 
       - name: Disponibilizar APK para Download
