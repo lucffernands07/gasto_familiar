@@ -48,6 +48,9 @@ jobs:
       - name: Habilitar plataforma Android e ajustar dependencias nativas
         run: |
           flutter create . --platforms android
+          # Injeta automaticamente o google-services.json gerado pelo Firebase a partir do Secret
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          
           sed -i 's/compileSdk [0-9]*/compileSdk 36/g' android/app/build.gradle || true
           sed -i 's/targetSdk [0-9]*/targetSdk 36/g' android/app/build.gradle || true
           sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' android/app/build.gradle || true
