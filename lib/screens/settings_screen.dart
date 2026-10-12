@@ -187,23 +187,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  // Chamada atualizada e totalmente compatível com o file_picker ^13.1.0
-                                  final FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                  // Utilização moderna: retorna List<PlatformFile>
+                                  List<PlatformFile> files = await FilePicker.platform.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
-                                    withData: true,
                                   );
 
-                                  if (result != null && result.files.single.bytes != null) {
-                                    final jsonString = utf8.decode(result.files.single.bytes!);
-                                    setState(() => _isLoading = true);
-                                    try {
-                                      await FamilyService().restaurarBackup(jsonString);
-                                      _mostrarMensagem('Restaurado com sucesso!');
-                                    } catch (e) {
-                                      _mostrarMensagem('Erro ao restaurar: $e');
-                                    } finally {
-                                      setState(() => _isLoading = false);
+                                  if (files.isNotEmpty) {
+                                    PlatformFile file = files.first;
+                                    Uint8List? fileBytes = await file.readAsBytes();
+
+                                    if (fileBytes != null) {
+                                      final jsonString = utf8.decode(fileBytes);
+                                      setState(() => _isLoading = true);
+                                      try {
+                                        await FamilyService().restaurarBackup(jsonString);
+                                        _mostrarMensagem('Restaurado com sucesso!');
+                                      } catch (e) {
+                                        _mostrarMensagem('Erro ao restaurar: $e');
+                                      } finally {
+                                        setState(() => _isLoading = false);
+                                      }
                                     }
                                   }
                                 },
