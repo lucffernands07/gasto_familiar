@@ -62,15 +62,15 @@ jobs:
 
       - name: Gerar ecra de abertura (Splash Screen)
         run: dart run flutter_native_splash:create
-
+            
       # --- DECODIFICAR KEYSTORE FIXA E COMPILAR APK ASSINADO ---
       - name: Configurar Keystore e Compilar APK
         run: |
           # Cria a pasta android/app se não existir
           mkdir -p android/app
           
-          # Decodifica a Keystore a partir da variável de ambiente com segurança
-          echo "$KEYSTORE_BASE64_VAL" | base64 --decode > android/app/upload-keystore.jks
+          # Decodifica a Keystore com segurança usando heredestring (evita quebras de linha do echo)
+          base64 -d <<< "$KEYSTORE_BASE64_VAL" > android/app/upload-keystore.jks
 
           # Cria o arquivo key.properties automaticamente usando as variáveis fixas
           echo "storeFile=upload-keystore.jks" > android/key.properties
