@@ -63,7 +63,7 @@ jobs:
       - name: Gerar ecra de abertura (Splash Screen)
         run: dart run flutter_native_splash:create
             
-      # --- DECODIFICAR KEYSTORE FIXA COM PYTHON (À PROVA DE FALHAS) ---
+      # --- DECODIFICAR KEYSTORE FIXA COM PYTHON E COMPILAR APK ---
       - name: Configurar Keystore e Compilar APK
         run: |
           # Cria a pasta android/app se não existir
@@ -83,9 +83,14 @@ jobs:
         env:
           KEYSTORE_BASE64_VAL: ${{ secrets.KEYSTORE_BASE64 }}
 
+      - name: Exibir SHA-1 do APK nos Logs (Validação)
+        run: |
+          echo "=== EXTRACAO DA ASSINATURA DO APK ==="
+          keytool -list -v -keystore android/app/upload-keystore.jks -alias gasto_familiar2026 -storepass '${{ secrets.KEYSTORE_PASSWORD }}'
+          echo "====================================="
+
       - name: Disponibilizar APK para Download
         uses: actions/upload-artifact@v4
         with:
           name: app-familia-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          
