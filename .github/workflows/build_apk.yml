@@ -63,33 +63,28 @@ jobs:
       - name: Gerar ecra de abertura (Splash Screen)
         run: dart run flutter_native_splash:create
 
-      # --- GERAR KEYSTORE FIXA E COMPILAR APK ASSINADO ---
+      # --- DECODIFICAR KEYSTORE FIXA E COMPILAR APK ASSINADO ---
       - name: Configurar Keystore e Compilar APK
         run: |
           # Cria a pasta android/app se não existir
           mkdir -p android/app
           
-          # Gera a keystore fixa com os dados que definiste
-          keytool -genkey -v -keystore android/app/upload-keystore.jks \
-          -keyalg RSA -keysize 2048 -validity 10000 \
-          -alias gasto_famiar2026 \
-          -keypass 'Luc07@gasto_familiar' \
-          -storepass 'Luc07@gasto_familiar' \
-          -dname "CN=Luciano, O=GastoFamiliar, C=BR"
+          # Decodifica a Keystore fixa a partir do Secret Base64
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-          # Cria o arquivo key.properties automaticamente
+          # Cria o arquivo key.properties automaticamente usando as variáveis fixas
           echo "storeFile=upload-keystore.jks" > android/key.properties
-          echo "storePassword=Luc07@gasto_familiar" >> android/key.properties
-          echo "keyAlias=gasto_famiar2026" >> android/key.properties
-          echo "keyPassword=Luc07@gasto_familiar" >> android/key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
 
-          # Compila o APK em modo release oficial utilizando a keystore fixa
+          # Compila o APK em modo release oficial utilizando a keystore fixa e consistente
           flutter build apk --release
 
       - name: Exibir SHA-1 do APK nos Logs (Validação)
         run: |
           echo "=== EXTRACAO DA ASSINATURA DO APK ==="
-          keytool -list -v -keystore android/app/upload-keystore.jks -alias gasto_famiar2026 -storepass 'Luc07@gasto_familiar'
+          keytool -list -v -keystore android/app/upload-keystore.jks -alias gasto_familiar2026 -storepass '${{ secrets.KEYSTORE_PASSWORD }}'
           echo "====================================="
 
       - name: Disponibilizar APK para Download
