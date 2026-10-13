@@ -63,14 +63,14 @@ jobs:
       - name: Gerar ecra de abertura (Splash Screen)
         run: dart run flutter_native_splash:create
             
-      # --- DECODIFICAR KEYSTORE FIXA E COMPILAR APK ASSINADO ---
+      # --- DECODIFICAR KEYSTORE FIXA COM PYTHON (À PROVA DE FALHAS) ---
       - name: Configurar Keystore e Compilar APK
         run: |
           # Cria a pasta android/app se não existir
           mkdir -p android/app
           
-          # Decodifica ignorando qualquer lixo ou quebra de linha do Secret
-          base64 --decode -i <<< "$KEYSTORE_BASE64_VAL" > android/app/upload-keystore.jks
+          # O Python decodifica o Base64 ignorando qualquer quebra de linha ou espaço invisível do Secret
+          python3 -c "import base64, os; open('android/app/upload-keystore.jks', 'wb').write(base64.b64decode(os.environ['KEYSTORE_BASE64_VAL']))"
 
           # Cria o arquivo key.properties automaticamente usando as variáveis fixas
           echo "storeFile=upload-keystore.jks" > android/key.properties
@@ -78,7 +78,7 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
 
-          # Compila o APK em modo release oficial utilizando a keystore fixa
+          # Compila o APK em modo release oficial utilizando a keystore fixa e consistente
           flutter build apk --release
         env:
           KEYSTORE_BASE64_VAL: ${{ secrets.KEYSTORE_BASE64 }}
