@@ -69,8 +69,8 @@ jobs:
           # Cria a pasta android/app se não existir
           mkdir -p android/app
           
-          # Decodifica a Keystore fixa a partir do Secret Base64
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          # Decodifica a Keystore a partir da variável de ambiente com segurança
+          echo "$KEYSTORE_BASE64_VAL" | base64 --decode > android/app/upload-keystore.jks
 
           # Cria o arquivo key.properties automaticamente usando as variáveis fixas
           echo "storeFile=upload-keystore.jks" > android/key.properties
@@ -78,14 +78,11 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
 
-          # Compila o APK em modo release oficial utilizando a keystore fixa e consistente
+          # Compila o APK em modo release oficial utilizando a keystore fixa
           flutter build apk --release
+        env:
+          KEYSTORE_BASE64_VAL: ${{ secrets.KEYSTORE_BASE64 }}
 
-      - name: Exibir SHA-1 do APK nos Logs (Validação)
-        run: |
-          echo "=== EXTRACAO DA ASSINATURA DO APK ==="
-          keytool -list -v -keystore android/app/upload-keystore.jks -alias gasto_familiar2026 -storepass '${{ secrets.KEYSTORE_PASSWORD }}'
-          echo "====================================="
 
       - name: Disponibilizar APK para Download
         uses: actions/upload-artifact@v4
