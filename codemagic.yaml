@@ -7,11 +7,16 @@ workflows:
       vars:
         PACKAGE_NAME: "com.example.gasto_familiar"
     scripts:
+      - name: Generate Android platform files if missing
+        script: |
+          # Se a pasta android não existir, o Flutter cria-a automaticamente
+          flutter create . --platforms=android
+          
       - name: Restore keystore and google-services.json
         script: |
           mkdir -p android/app
           
-          # Descodifica a keystore base64 de volta para .jks com o nome correto
+          # Descodifica a keystore base64 para o local correto
           echo "$CM_KEYSTORE_BASE_64" | base64 --decode > android/app/nova_chave.jks
           
           # Injeta o google-services.json atualizado
@@ -19,7 +24,6 @@ workflows:
           
       - name: Configure signing properties
         script: |
-          # Cria o ficheiro key.properties para o Gradle assinar o APK com a chave certa
           cat << EOF > android/key.properties
           storePassword=Luc07@gasto_familiar
           keyPassword=Luc07@gasto_familiar
@@ -37,3 +41,4 @@ workflows:
           
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
+      
