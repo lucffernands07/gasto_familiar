@@ -47,19 +47,21 @@ class _HeroCardState extends State<HeroCard> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final familyId = user?.uid ?? 'familia_default';
+    final String chaveMes = '${widget.mesSelecionado.year}_${widget.mesSelecionado.month.toString().padLeft(2, '0')}';
 
-    return StreamBuilder<QuerySnapshot>(
+    return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('families')
           .doc(familyId)
-          .collection('members')
           .snapshots(),
-      builder: (context, memberSnapshot) {
-        double totalMembros = 0.0;
-        if (memberSnapshot.hasData) {
-          for (var doc in memberSnapshot.data!.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            totalMembros += (data['saldo'] ?? 0.0).toDouble();
+      builder: (context, familySnapshot) {
+        double saldoFamiliaMes = 0.0;
+        
+        if (familySnapshot.hasData && familySnapshot.data!.exists) {
+          final data = familySnapshot.data!.data() as Map<String, dynamic>?;
+          if (data != null && data['saldosMensais'] != null) {
+            final Map<String, dynamic> saldosMensais = data['saldosMensais'];
+            saldoFamiliaMes = (saldosMensais[chaveMes] ?? 0.0).toDouble();
           }
         }
 
@@ -79,7 +81,6 @@ class _HeroCardState extends State<HeroCard> {
               for (var doc in txSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
                 
-                // Filtrar por mês e ano selecionados
                 if (data['createdAt'] != null) {
                   final Timestamp timestamp = data['createdAt'];
                   final DateTime dataTx = timestamp.toDate();
@@ -108,8 +109,8 @@ class _HeroCardState extends State<HeroCard> {
               }
             }
 
-            final saldoTotal = receitasEfetivas - gastosEfetivos;
-            final saldoPrevio = receitasPrevias - gastosPrevios;
+            final saldoTotal = saldoFamiliaMes + receitasEfetivas - gastosEfetivos;
+            final saldoPrevio = saldoFamiliaMes + receitasPrevias - gastosPrevios;
 
             return Container(
               width: double.infinity,
@@ -132,7 +133,6 @@ class _HeroCardState extends State<HeroCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Saudação limpa sem abas
                   Text(
                     'Olá, $_greetingName!',
                     style: const TextStyle(
@@ -144,8 +144,6 @@ class _HeroCardState extends State<HeroCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-
-                  // Subtítulo
                   const Text(
                     'Resumo deste mês',
                     style: TextStyle(
@@ -207,19 +205,19 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Cartão Saldo Família (Clicável)
+                  // Cartão Saldo Família independente por mês
                   GestureDetector(
                     onTap: widget.onTapSaldoFamilia,
                     child: _buildItemCard(
                       'Saldo Família',
-                      widget.mostrarSaldo ? 'R\$ ${totalMembros.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      widget.mostrarSaldo ? 'R\$ ${saldoFamiliaMes.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                       const Color(0xFF80DEEA),
                       Icons.people_outline,
                     ),
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Receitas (Clicável)
+                  // Cartão Receitas
                   GestureDetector(
                     onTap: widget.onTapReceitas,
                     child: _buildItemCard(
@@ -231,7 +229,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Gastos (Clicável)
+                  // Cartão Gastos
                   GestureDetector(
                     onTap: widget.onTapGastos,
                     child: _buildItemCard(
