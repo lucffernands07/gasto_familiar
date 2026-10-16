@@ -49,6 +49,19 @@ class _HeroCardState extends State<HeroCard> {
     final familyId = user?.uid ?? 'familia_default';
     final String chaveMes = '${widget.mesSelecionado.year}_${widget.mesSelecionado.month.toString().padLeft(2, '0')}';
 
+    // Verificar se o mês selecionado é o mês atual do sistema
+    final agora = DateTime.now();
+    final bool ehMesAtual = widget.mesSelecionado.year == agora.year && widget.mesSelecionado.month == agora.month;
+
+    // Definir o gradiente com base no mês (Rosa/Laranja para o atual, Cinzentos para os outros)
+    final List<Color> coresGradiente = ehMesAtual
+        ? [const Color(0xFFFFCBDD), const Color(0xFFFFF3E0)] // Rosa para Laranja claro
+        : [const Color(0xFF4A4A4A), const Color(0xFF888888)]; // Cinzento escuro para cinzento claro
+
+    final Color corTextoSecundario = ehMesAtual ? const Color(0xFF666666) : Colors.white70;
+    final Color corTextoPrincipal = ehMesAtual ? const Color(0xFF333333) : Colors.white;
+    final Color corValorPrincipal = ehMesAtual ? const Color(0xFF222222) : Colors.white;
+
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('families')
@@ -116,15 +129,15 @@ class _HeroCardState extends State<HeroCard> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+                gradient: LinearGradient(
+                  colors: coresGradiente,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.pink.withOpacity(0.08),
+                    color: Colors.black.withOpacity(0.08),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -135,33 +148,33 @@ class _HeroCardState extends State<HeroCard> {
                 children: [
                   Text(
                     'Olá, $_greetingName!',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
+                      color: corTextoPrincipal,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'Resumo deste mês',
+                  Text(
+                    ehMesAtual ? 'Resumo deste mês' : 'Resumo do mês selecionado',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF666666),
+                      color: corTextoSecundario,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Center(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Saldos Totais:',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF555555),
+                            color: corTextoSecundario,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -172,10 +185,10 @@ class _HeroCardState extends State<HeroCard> {
                               widget.mostrarSaldo
                                   ? 'R\$ ${saldoTotal.toStringAsFixed(2).replaceFirst('.', ',')}'
                                   : 'R\$ ••••••',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF222222),
+                                color: corValorPrincipal,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -184,7 +197,7 @@ class _HeroCardState extends State<HeroCard> {
                               child: Icon(
                                 widget.mostrarSaldo ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                 size: 22,
-                                color: const Color(0xFF555555),
+                                color: corTextoSecundario,
                               ),
                             ),
                           ],
@@ -194,10 +207,10 @@ class _HeroCardState extends State<HeroCard> {
                           widget.mostrarSaldo
                               ? 'Saldo previsto: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
                               : 'Saldo previsto: R\$ ••••••',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.normal,
-                            color: Color(0xFF666666),
+                            color: corTextoSecundario,
                           ),
                         ),
                       ],
@@ -205,7 +218,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Cartão Saldo Família independente por mês
+                  // Cartão Saldo Família
                   GestureDetector(
                     onTap: widget.onTapSaldoFamilia,
                     child: _buildItemCard(
