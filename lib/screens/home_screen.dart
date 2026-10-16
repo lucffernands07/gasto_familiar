@@ -456,4 +456,90 @@ class _HomeScreenState extends State<HomeScreen> {
                       onSelected: (selected) {
                         setStateDialog(() {
                           tipoSelecionado = 'receita';
-                    
+                          categoriaController.text = 'Receita';
+                          statusSelecionado = 'Recebido';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    ChoiceChip(
+                      label: const Text('Despesa'),
+                      selected: tipoSelecionado == 'despesa',
+                      selectedColor: const Color(0xFFFF8B94),
+                      onSelected: (selected) {
+                        setStateDialog(() {
+                          tipoSelecionado = 'despesa';
+                          categoriaController.text = 'Despesas Fixas';
+                          statusSelecionado = 'Pago';
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: categoriaController,
+                  decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descricaoController,
+                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Salário / Luz)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: statusSelecionado,
+                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
+                  items: tipoSelecionado == 'receita'
+                      ? const [
+                          DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
+                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                        ]
+                      : const [
+                          DropdownMenuItem(value: 'Pago', child: Text('Pago')),
+                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                        ],
+                  onChanged: (val) {
+                    if (val != null) setStateDialog(() => statusSelecionado = val);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
+                final descricao = descricaoController.text.trim();
+                final categoria = categoriaController.text.trim();
+
+                if (valor > 0) {
+                  final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
+                  await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
+                    'categoria': categoria.isNotEmpty ? categoria : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesas'),
+                    'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
+                    'valor': valor,
+                    'tipo': tipoSelecionado,
+                    'status': statusSelecionado,
+                    'createdAt': FieldValue.serverTimestamp(),
+                  });
+
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
