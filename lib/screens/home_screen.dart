@@ -168,16 +168,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _mostrarDialogAtualizarSaldoFamilia(BuildContext context) {
     final saldoController = TextEditingController();
+    
+    // Identificador único do mês atual (ex: "2026_11" para Novembro de 2026)
+    final String chaveMes = '${_mesSelecionado.year}_${_mesSelecionado.month.toString().padLeft(2, '0')}';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFFAF6EE),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Atualizar Saldo Família', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Saldo Família (${_mesSelecionado.month}/${_mesSelecionado.year})', style: const TextStyle(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: saldoController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Novo Saldo Família (R\$)', border: OutlineInputBorder()),
+          decoration: const InputDecoration(labelText: 'Saldo Família deste Mês (R\$)', border: OutlineInputBorder()),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
@@ -185,22 +189,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               final novoSaldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
               
-              // Atualiza ou cria um registo de saldo na família ou no primeiro membro encontrado
-              final membersSnapshot = await _db.collection('families').doc(_familyId).collection('members').get();
-              if (membersSnapshot.docs.isNotEmpty) {
-                // Atualiza o primeiro membro como base se houver membros
-                await membersSnapshot.docs.first.reference.update({'saldo': novoSaldo});
-              } else {
-                // Se não houver membros, cria um membro padrão com esse saldo
-                await _db.collection('families').doc(_familyId).collection('members').add({
-                  'nome': 'Família',
-                  'saldo': novoSaldo,
-                  'imageUrl': 'https://i.pravatar.cc/150?img=12',
-                  'updatedAt': FieldValue.serverTimestamp(),
-                });
-              }
+              // Guarda o saldo específico deste mês no documento da família
+              await _db.collection('families').doc(_familyId).set({
+                'saldosMensais': {
+                  chaveMes: novoSaldo,
+                },
+                'updatedAt': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
 
               if (context.mounted) Navigator.pop(context);
+              setState(() {}); // Atualiza o ecrã
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
             child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
