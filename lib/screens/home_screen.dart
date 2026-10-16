@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
-  DateTime _mesSelecionado = DateTime.now(); // Controlo do mês atual/navegado
+  DateTime _mesSelecionado = DateTime.now();
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   String _familyId = 'familia_default';
   String _appTitle = 'Meus Gastos';
@@ -39,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _mudarMes(int direcao) {
     setState(() {
-      // direcao: -1 para mês anterior, 1 para próximo mês
       _mesSelecionado = DateTime(_mesSelecionado.year, _mesSelecionado.month + direcao, 1);
     });
   }
@@ -54,13 +53,10 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFFAF6EE),
       drawer: CustomDrawer(onFamilyChanged: _carregarDadosIniciais),
       body: GestureDetector(
-        // Gesto horizontal para alternar entre os meses de forma fluida
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity! < 0) {
-            // Arrastou para a esquerda -> Avança 1 mês
             _mudarMes(1);
           } else if (details.primaryVelocity! > 0) {
-            // Arrastou para a direita -> Recua 1 mês
             _mudarMes(-1);
           }
         },
@@ -73,12 +69,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildTopBar(context, userPhoto, fallbackLetter),
                 const SizedBox(height: 12),
-                
-                // Barra de navegação rápida entre meses
                 _buildBarraNavegacaoMes(),
                 const SizedBox(height: 12),
-
-                // HeroCard principal (com cliques nos cartões internos)
                 HeroCard(
                   mostrarSaldo: _mostrarSaldo,
                   onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
@@ -88,21 +80,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTapGastos: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'despesa'),
                 ),
                 const SizedBox(height: 20),
-                
-                // Título da secção da planilha abaixo do cartão
                 const Text(
                   'Transações do Mês',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
                 ),
                 const SizedBox(height: 12),
-
-                // Planilha de transações filtrada pelo mês selecionado ocupando o lugar dos membros
                 PlanilhaView(
                   familyId: _familyId,
                   mostrarSaldo: _mostrarSaldo,
                   mesSelecionado: _mesSelecionado,
                 ),
-
                 const SizedBox(height: 80),
               ],
             ),
@@ -197,10 +184,22 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () async {
               final novoSaldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
-              await _db.collection('families').doc(_familyId).update({
-                'saldoFamilia': novoSaldo,
-                'updatedAt': FieldValue.serverTimestamp(),
-              });
+              
+              // Atualiza ou cria um registo de saldo na família ou no primeiro membro encontrado
+              final membersSnapshot = await _db.collection('families').doc(_familyId).collection('members').get();
+              if (membersSnapshot.docs.isNotEmpty) {
+                // Atualiza o primeiro membro como base se houver membros
+                await membersSnapshot.docs.first.reference.update({'saldo': novoSaldo});
+              } else {
+                // Se não houver membros, cria um membro padrão com esse saldo
+                await _db.collection('families').doc(_familyId).collection('members').add({
+                  'nome': 'Família',
+                  'saldo': novoSaldo,
+                  'imageUrl': 'https://i.pravatar.cc/150?img=12',
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+              }
+
               if (context.mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
@@ -234,12 +233,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _mostrarDialogLancarTransacao(BuildContext context, {String tipoInicial = 'receita'}) {
+  void _mostrarDialogLancarTransacao(BuildContext context, {String tipoInicial = 'receita'}) async {
+    // Buscar categorias e descrições já existentes no Firestore para sugestões
+    Set<String> categoriasExistentes = {};
+    Set<String> descricoesExistentes = {};
+
+    try {
+      final txSnapshot = await _db.collection('families').doc(_familyId).collection('transactions').get();
+      for (var doc in txSnapshot.docs) {
+        final data = doc.data();
+        if (data['categoria'] != null) categoriasExistentes.add(data['categoria'].toString());
+        if (data['descricao'] != null) descricoesExistentes.add(data['descricao'].toString());
+      }
+    } catch (_) {}
+
     final valorController = TextEditingController();
     final descricaoController = TextEditingController();
     final categoriaController = TextEditingController(text: tipoInicial == 'receita' ? 'Receita' : 'Despesas Fixas');
     String tipoSelecionado = tipoInicial;
     String statusSelecionado = tipoInicial == 'receita' ? 'Recebido' : 'Pago';
+
+    if (!context.mounted) return;
 
     showDialog(
       context: context,
@@ -283,14 +297,55 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: categoriaController,
-                  decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder()),
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text == '') {
+                      return categoriasExistentes;
+                    }
+                    return categoriasExistentes.where((String option) {
+                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  onSelected: (String selection) {
+                    categoriaController.text = selection;
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                    // Sincroniza com o nosso controlador principal se necessário
+                    if (controller.text.isEmpty && categoriaController.text.isNotEmpty) {
+                      controller.text = categoriaController.text;
+                    }
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      onChanged: (val) => categoriaController.text = val,
+                      decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder()),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: descricaoController,
-                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Salário / Luz)', border: OutlineInputBorder()),
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text == '') {
+                      return descricoesExistentes;
+                    }
+                    return descricoesExistentes.where((String option) {
+                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  onSelected: (String selection) {
+                    descricaoController.text = selection;
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                    if (controller.text.isEmpty && descricaoController.text.isNotEmpty) {
+                      controller.text = descricaoController.text;
+                    }
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      onChanged: (val) => descricaoController.text = val,
+                      decoration: const InputDecoration(labelText: 'Descrição (Ex: Salário / Luz)', border: OutlineInputBorder()),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
