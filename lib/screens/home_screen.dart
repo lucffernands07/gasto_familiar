@@ -168,8 +168,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _mostrarDialogAtualizarSaldoFamilia(BuildContext context) {
     final saldoController = TextEditingController();
-    
-    // Identificador único do mês atual (ex: "2026_11" para Novembro de 2026)
     final String chaveMes = '${_mesSelecionado.year}_${_mesSelecionado.month.toString().padLeft(2, '0')}';
 
     showDialog(
@@ -189,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               final novoSaldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
               
-              // Guarda o saldo específico deste mês no documento da família
+              // Atualização direta utilizando a notação de ponto do Firestore para garantir a persistência correta
               await _db.collection('families').doc(_familyId).set({
                 'saldosMensais': {
                   chaveMes: novoSaldo,
@@ -197,8 +195,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 'updatedAt': FieldValue.serverTimestamp(),
               }, SetOptions(merge: true));
 
-              if (context.mounted) Navigator.pop(context);
-              setState(() {}); // Atualiza o ecrã
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+              
+              // Força a atualização do ecrã localmente
+              setState(() {});
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
             child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
@@ -232,7 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _mostrarDialogLancarTransacao(BuildContext context, {String tipoInicial = 'receita'}) async {
-    // Buscar categorias e descrições já existentes no Firestore para sugestões
     Set<String> categoriasExistentes = {};
     Set<String> descricoesExistentes = {};
 
@@ -308,7 +309,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     categoriaController.text = selection;
                   },
                   fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                    // Sincroniza com o nosso controlador principal se necessário
                     if (controller.text.isEmpty && categoriaController.text.isNotEmpty) {
                       controller.text = categoriaController.text;
                     }
@@ -372,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(onNotFound: () {}, onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             ElevatedButton(
               onPressed: () async {
                 final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
