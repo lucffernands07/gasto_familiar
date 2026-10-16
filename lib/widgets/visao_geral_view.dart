@@ -6,6 +6,7 @@ import '../widgets/membro_tile.dart';
 class VisaoGeralView extends StatelessWidget {
   final String familyId;
   final bool mostrarSaldo;
+  final DateTime mesSelecionado; // <- Adicionado
   final Function(BuildContext, String, Map<String, dynamic>) onEditMember;
   final Function(BuildContext, String) onDeleteMember;
   final VoidCallback onCreateMember;
@@ -14,6 +15,7 @@ class VisaoGeralView extends StatelessWidget {
     super.key,
     required this.familyId,
     required this.mostrarSaldo,
+    required this.mesSelecionado, // <- Adicionado
     required this.onEditMember,
     required this.onDeleteMember,
     required this.onCreateMember,
