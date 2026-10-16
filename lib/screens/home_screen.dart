@@ -71,25 +71,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 _buildBarraNavegacaoMes(),
                 const SizedBox(height: 12),
-                HeroCard(
-                  mostrarSaldo: _mostrarSaldo,
-                  onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
-                  mesSelecionado: _mesSelecionado,
-                  onTapSaldoFamilia: () => _mostrarDialogAtualizarSaldoFamilia(context),
-                  onTapReceitas: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'receita'),
-                  onTapGastos: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'despesa'),
+                
+                // Efeito de transição suave (AnimatedSwitcher) ao mudar de mês
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.08, 0.0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Column(
+                    key: ValueKey<String>('${_mesSelecionado.year}-${_mesSelecionado.month}'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      HeroCard(
+                        mostrarSaldo: _mostrarSaldo,
+                        onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
+                        mesSelecionado: _mesSelecionado,
+                        onTapSaldoFamilia: () => _mostrarDialogAtualizarSaldoFamilia(context),
+                        onTapReceitas: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'receita'),
+                        onTapGastos: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'despesa'),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Transações do Mês',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
+                      ),
+                      const SizedBox(height: 12),
+                      PlanilhaView(
+                        familyId: _familyId,
+                        mostrarSaldo: _mostrarSaldo,
+                        mesSelecionado: _mesSelecionado,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Transações do Mês',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
-                ),
-                const SizedBox(height: 12),
-                PlanilhaView(
-                  familyId: _familyId,
-                  mostrarSaldo: _mostrarSaldo,
-                  mesSelecionado: _mesSelecionado,
-                ),
+                
                 const SizedBox(height: 80),
               ],
             ),
