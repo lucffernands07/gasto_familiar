@@ -8,6 +8,10 @@ class HeroCard extends StatefulWidget {
   final VoidCallback onToggleVisibility;
   final String abaAtiva;
   final ValueChanged<String> onAbaChanged;
+  final DateTime mesSelecionado; // <- Novo: Recebe o mês selecionado
+  final VoidCallback? onTapSaldoFamilia; // <- Novo: Ação ao clicar no Saldo Família
+  final VoidCallback? onTapReceitas; // <- Novo: Ação ao clicar em Receitas
+  final VoidCallback? onTapGastos; // <- Novo: Ação ao clicar em Gastos
 
   const HeroCard({
     super.key,
@@ -15,6 +19,10 @@ class HeroCard extends StatefulWidget {
     required this.onToggleVisibility,
     required this.abaAtiva,
     required this.onAbaChanged,
+    required this.mesSelecionado,
+    this.onTapSaldoFamilia,
+    this.onTapReceitas,
+    this.onTapGastos,
   });
 
   @override
@@ -74,6 +82,18 @@ class _HeroCardState extends State<HeroCard> {
             if (txSnapshot.hasData) {
               for (var doc in txSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
+                
+                // Filtrar por mês e ano selecionados
+                if (data['createdAt'] != null) {
+                  final Timestamp timestamp = data['createdAt'];
+                  final DateTime dataTx = timestamp.toDate();
+                  
+                  if (dataTx.year != widget.mesSelecionado.year || 
+                      dataTx.month != widget.mesSelecionado.month) {
+                    continue; // Ignora transações que não sejam do mês selecionado
+                  }
+                }
+
                 final amount = (data['valor'] ?? 0.0).toDouble();
                 final tipo = data['tipo'] ?? 'despesa';
                 final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
@@ -116,7 +136,7 @@ class _HeroCardState extends State<HeroCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Linha Superior: Visão Geral e Planilha alinhados à direita
+                  // 1. Linha Superior: Visão Geral e Planilha
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -177,7 +197,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 8),
 
-                  // 2. Linha de Baixo: Saudação com o nome completo (sem esmagar)
+                  // 2. Saudação
                   Text(
                     'Olá, $_greetingName!',
                     style: const TextStyle(
@@ -251,25 +271,40 @@ class _HeroCardState extends State<HeroCard> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildItemCard(
-                    'Saldo Família',
-                    widget.mostrarSaldo ? 'R\$ ${totalMembros.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
-                    const Color(0xFF80DEEA),
-                    Icons.people_outline,
+                  
+                  // Cartão Saldo Família (Clicável para atualizar)
+                  GestureDetector(
+                    onTap: widget.onTapSaldoFamilia,
+                    child: _buildItemCard(
+                      'Saldo Família',
+                      widget.mostrarSaldo ? 'R\$ ${totalMembros.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      const Color(0xFF80DEEA),
+                      Icons.people_outline,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  _buildItemCard(
-                    'Receitas (Recebidas)',
-                    widget.mostrarSaldo ? 'R\$ ${receitasEfetivas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
-                    const Color(0xFFA8E6CF),
-                    Icons.arrow_upward_rounded,
+                  
+                  // Cartão Receitas (Clicável para lançar receita)
+                  GestureDetector(
+                    onTap: widget.onTapReceitas,
+                    child: _buildItemCard(
+                      'Receitas (Recebidas)',
+                      widget.mostrarSaldo ? 'R\$ ${receitasEfetivas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      const Color(0xFFA8E6CF),
+                      Icons.arrow_upward_rounded,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  _buildItemCard(
-                    'Gastos (Pagos)',
-                    widget.mostrarSaldo ? 'R\$ ${gastosEfetivos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
-                    const Color(0xFFFF8B94),
-                    Icons.arrow_downward_rounded,
+                  
+                  // Cartão Gastos (Clicável para lançar despesa)
+                  GestureDetector(
+                    onTap: widget.onTapGastos,
+                    child: _buildItemCard(
+                      'Gastos (Pagos)',
+                      widget.mostrarSaldo ? 'R\$ ${gastosEfetivos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      const Color(0xFFFF8B94),
+                      Icons.arrow_downward_rounded,
+                    ),
                   ),
                 ],
               ),
