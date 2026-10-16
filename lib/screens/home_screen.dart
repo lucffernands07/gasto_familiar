@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
   String _abaAtiva = 'visao_geral';
+  DateTime _mesSelecionado = DateTime.now(); // Controlo do mês atual/navegado
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   String _familyId = 'familia_default';
   String _appTitle = 'Meus Gastos';
@@ -44,6 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _mudarMes(int direcao) {
+    setState(() {
+      // direcao: -1 para mês anterior, 1 para próximo mês
+      _mesSelecionado = DateTime(_mesSelecionado.year, _mesSelecionado.month + direcao, 1);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -54,14 +62,14 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFFAF6EE),
       drawer: CustomDrawer(onFamilyChanged: _carregarDadosIniciais),
       body: GestureDetector(
-        // Adiciona suporte a gesto de arrastar para esquerda/direita
+        // Gesto horizontal para alternar entre meses
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity! < 0) {
-            // Arrastou para a esquerda -> Vai para Planilha
-            if (_abaAtiva == 'visao_geral') _mudarAba('planilha');
+            // Arrastou para a esquerda -> Avança 1 mês
+            _mudarMes(1);
           } else if (details.primaryVelocity! > 0) {
-            // Arrastou para a direita -> Vai para Visão Geral
-            if (_abaAtiva == 'planilha') _mudarAba('visao_geral');
+            // Arrastou para a direita -> Recua 1 mês
+            _mudarMes(-1);
           }
         },
         child: SafeArea(
@@ -72,16 +80,25 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTopBar(context, userPhoto, fallbackLetter),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                
+                // Barra de navegação rápida entre meses
+                _buildBarraNavegacaoMes(),
+                const SizedBox(height: 12),
+
                 HeroCard(
                   mostrarSaldo: _mostrarSaldo,
                   onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
                   abaAtiva: _abaAtiva,
                   onAbaChanged: _mudarAba,
+                  mesSelecionado: _mesSelecionado,
+                  onTapSaldoFamilia: () => _mostrarDialogAtualizarSaldoFamilia(context),
+                  onTapReceitas: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'receita'),
+                  onTapGastos: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'despesa'),
                 ),
                 const SizedBox(height: 16),
                 
-                // Indicador visual com seta pedindo para arrastar / ver Planilha
+                // Indicador visual pedindo para arrastar / ver Planilha
                 if (_abaAtiva == 'visao_geral')
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
@@ -90,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFF888888)),
                         SizedBox(width: 4),
                         Text(
-                          'Arraste ou clique em Planilha',
+                          'Arraste para mudar o mês ou clique em Planilha',
                           style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -107,16 +124,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     return SlideTransition(position: offsetAnimation, child: child);
                   },
                   child: KeyedSubtree(
-                    key: ValueKey<String>(_abaAtiva),
+                    key: ValueKey<String>('$_abaAtiva-${_mesSelecionado.year}-${_mesSelecionado.month}'),
                     child: _abaAtiva == 'visao_geral'
                         ? VisaoGeralView(
                             familyId: _familyId,
                             mostrarSaldo: _mostrarSaldo,
+                            mesSelecionado: _mesSelecionado,
                             onEditMember: _mostrarDialogEditarMembro,
                             onDeleteMember: _excluirMembro,
                             onCreateMember: () => _mostrarDialogCriarMembro(context),
                           )
-                        : PlanilhaView(familyId: _familyId, mostrarSaldo: _mostrarSaldo),
+                        : PlanilhaView(
+                            familyId: _familyId,
+                            mostrarSaldo: _mostrarSaldo,
+                            mesSelecionado: _mesSelecionado,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 80),
@@ -148,6 +170,82 @@ class _HomeScreenState extends State<HomeScreen> {
           child: photoUrl == null || photoUrl.isEmpty ? Text(fallbackLetter, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))) : null,
         ),
       ],
+    );
+  }
+
+  Widget _buildBarraNavegacaoMes() {
+    final meses = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    String textoMes = '${meses[_mesSelecionado.month - 1]} ${_mesSelecionado.year}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: Color(0xFF333333)),
+            onPressed: () => _mudarMes(-1),
+          ),
+          Text(
+            textoMes,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF333333),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, color: Color(0xFF333333)),
+            onPressed: () => _mudarMes(1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogAtualizarSaldoFamilia(BuildContext context) {
+    final saldoController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFAF6EE),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Atualizar Saldo Família', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: saldoController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Novo Saldo Família (R\$)', border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              final novoSaldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
+              await _db.collection('families').doc(_familyId).update({
+                'saldoFamilia': novoSaldo,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+              if (context.mounted) Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+            child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+          ),
+        ],
+      ),
     );
   }
 
@@ -330,12 +428,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _mostrarDialogLancarTransacao(BuildContext context) {
+  void _mostrarDialogLancarTransacao(BuildContext context, {String tipoInicial = 'receita'}) {
     final valorController = TextEditingController();
     final descricaoController = TextEditingController();
-    final categoriaController = TextEditingController(text: 'Receita');
-    String tipoSelecionado = 'receita';
-    String statusSelecionado = 'Recebido';
+    final categoriaController = TextEditingController(text: tipoInicial == 'receita' ? 'Receita' : 'Despesas Fixas');
+    String tipoSelecionado = tipoInicial;
+    String statusSelecionado = tipoInicial == 'receita' ? 'Recebido' : 'Pago';
 
     showDialog(
       context: context,
@@ -358,90 +456,4 @@ class _HomeScreenState extends State<HomeScreen> {
                       onSelected: (selected) {
                         setStateDialog(() {
                           tipoSelecionado = 'receita';
-                          categoriaController.text = 'Receita';
-                          statusSelecionado = 'Recebido';
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    ChoiceChip(
-                      label: const Text('Despesa'),
-                      selected: tipoSelecionado == 'despesa',
-                      selectedColor: const Color(0xFFFF8B94),
-                      onSelected: (selected) {
-                        setStateDialog(() {
-                          tipoSelecionado = 'despesa';
-                          categoriaController.text = 'Despesas Fixas';
-                          statusSelecionado = 'Pago';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: categoriaController,
-                  decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descricaoController,
-                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Salário / Luz)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: valorController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: statusSelecionado,
-                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
-                  items: tipoSelecionado == 'receita'
-                      ? const [
-                          DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
-                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                        ]
-                      : const [
-                          DropdownMenuItem(value: 'Pago', child: Text('Pago')),
-                          DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                        ],
-                  onChanged: (val) {
-                    if (val != null) setStateDialog(() => statusSelecionado = val);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-            ElevatedButton(
-              onPressed: () async {
-                final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
-                final descricao = descricaoController.text.trim();
-                final categoria = categoriaController.text.trim();
-
-                if (valor > 0) {
-                  final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
-                  await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
-                    'categoria': categoria.isNotEmpty ? categoria : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesas'),
-                    'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
-                    'valor': valor,
-                    'tipo': tipoSelecionado,
-                    'status': statusSelecionado,
-                    'createdAt': FieldValue.serverTimestamp(),
-                  });
-
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                    
