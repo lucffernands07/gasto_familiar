@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/hero_card.dart';
-import '../widgets/visao_geral_view.dart';
 import '../widgets/planilha_view.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,7 +17,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
-  String _abaAtiva = 'visao_geral';
   DateTime _mesSelecionado = DateTime.now(); // Controlo do mês atual/navegado
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   String _familyId = 'familia_default';
@@ -39,12 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _mudarAba(String novaAba) {
-    setState(() {
-      _abaAtiva = novaAba;
-    });
-  }
-
   void _mudarMes(int direcao) {
     setState(() {
       // direcao: -1 para mês anterior, 1 para próximo mês
@@ -62,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFFAF6EE),
       drawer: CustomDrawer(onFamilyChanged: _carregarDadosIniciais),
       body: GestureDetector(
-        // Gesto horizontal para alternar entre meses
+        // Gesto horizontal para alternar entre os meses de forma fluida
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity! < 0) {
             // Arrastou para a esquerda -> Avança 1 mês
@@ -86,61 +78,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildBarraNavegacaoMes(),
                 const SizedBox(height: 12),
 
+                // HeroCard principal (com cliques nos cartões internos)
                 HeroCard(
                   mostrarSaldo: _mostrarSaldo,
                   onToggleVisibility: () => setState(() => _mostrarSaldo = !_mostrarSaldo),
-                  abaAtiva: _abaAtiva,
-                  onAbaChanged: _mudarAba,
                   mesSelecionado: _mesSelecionado,
                   onTapSaldoFamilia: () => _mostrarDialogAtualizarSaldoFamilia(context),
                   onTapReceitas: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'receita'),
                   onTapGastos: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'despesa'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 
-                // Indicador visual pedindo para arrastar / ver Planilha
-                if (_abaAtiva == 'visao_geral')
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFF888888)),
-                        SizedBox(width: 4),
-                        Text(
-                          'Arraste para mudar o mês ou clique em Planilha',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    final offsetAnimation = Tween<Offset>(
-                      begin: Offset(_abaAtiva == 'planilha' ? 1.0 : -1.0, 0.0),
-                      end: Offset.zero,
-                    ).animate(animation);
-                    return SlideTransition(position: offsetAnimation, child: child);
-                  },
-                  child: KeyedSubtree(
-                    key: ValueKey<String>('$_abaAtiva-${_mesSelecionado.year}-${_mesSelecionado.month}'),
-                    child: _abaAtiva == 'visao_geral'
-                        ? VisaoGeralView(
-                            familyId: _familyId,
-                            mostrarSaldo: _mostrarSaldo,
-                            mesSelecionado: _mesSelecionado,
-                            onEditMember: _mostrarDialogEditarMembro,
-                            onDeleteMember: _excluirMembro,
-                            onCreateMember: () => _mostrarDialogCriarMembro(context),
-                          )
-                        : PlanilhaView(
-                            familyId: _familyId,
-                            mostrarSaldo: _mostrarSaldo,
-                            mesSelecionado: _mesSelecionado,
-                          ),
-                  ),
+                // Título da secção da planilha abaixo do cartão
+                const Text(
+                  'Transações do Mês',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
                 ),
+                const SizedBox(height: 12),
+
+                // Planilha de transações filtrada pelo mês selecionado ocupando o lugar dos membros
+                PlanilhaView(
+                  familyId: _familyId,
+                  mostrarSaldo: _mostrarSaldo,
+                  mesSelecionado: _mesSelecionado,
+                ),
+
                 const SizedBox(height: 80),
               ],
             ),
@@ -243,162 +205,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
             child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarDialogCriarMembro(BuildContext context) {
-    final nomeController = TextEditingController();
-    final saldoController = TextEditingController();
-    String? fotoBase64;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          backgroundColor: const Color(0xFFFAF6EE),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Criar Novo Membro', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    final picker = ImagePicker();
-                    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 400, maxHeight: 400, imageQuality: 80);
-                    if (pickedFile != null) {
-                      final bytes = await pickedFile.readAsBytes();
-                      setStateDialog(() => fotoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}');
-                    }
-                  },
-                  child: CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.white,
-                    backgroundImage: fotoBase64 != null ? MemoryImage(base64Decode(fotoBase64!.split(',')[1])) : null,
-                    child: fotoBase64 == null ? const Icon(Icons.add_a_photo, size: 28, color: Colors.grey) : null,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text('Toque para escolher foto', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                const SizedBox(height: 16),
-                TextField(controller: nomeController, decoration: const InputDecoration(labelText: 'Nome do Membro', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: saldoController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Saldo Inicial (R\$)', border: OutlineInputBorder())),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-            ElevatedButton(
-              onPressed: () async {
-                final nome = nomeController.text.trim();
-                final saldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
-                if (nome.isNotEmpty) {
-                  final membroId = _db.collection('families').doc(_familyId).collection('members').doc().id;
-                  await _db.collection('families').doc(_familyId).collection('members').doc(membroId).set({
-                    'nome': nome,
-                    'saldo': saldo,
-                    'imageUrl': fotoBase64 ?? 'https://i.pravatar.cc/150?img=12',
-                    'updatedAt': FieldValue.serverTimestamp(),
-                  });
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-              child: const Text('Criar', style: TextStyle(color: Color(0xFF2C3E50))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _mostrarDialogEditarMembro(BuildContext context, String membroId, Map<String, dynamic> dadosAtuais) {
-    final nomeController = TextEditingController(text: dadosAtuais['nome'] ?? '');
-    final saldoController = TextEditingController(text: (dadosAtuais['saldo'] ?? 0.0).toString());
-    String? fotoBase64 = dadosAtuais['imageUrl'];
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          backgroundColor: const Color(0xFFFAF6EE),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Editar Membro', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    final picker = ImagePicker();
-                    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 400, maxHeight: 400, imageQuality: 80);
-                    if (pickedFile != null) {
-                      final bytes = await pickedFile.readAsBytes();
-                      setStateDialog(() => fotoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}');
-                    }
-                  },
-                  child: CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.white,
-                    backgroundImage: fotoBase64 != null && fotoBase64!.startsWith('data:image')
-                        ? MemoryImage(base64Decode(fotoBase64!.split(',')[1]))
-                        : (fotoBase64 != null ? NetworkImage(fotoBase64!) as ImageProvider : null),
-                    child: fotoBase64 == null ? const Icon(Icons.add_a_photo, size: 28, color: Colors.grey) : null,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text('Toque para alterar foto', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                const SizedBox(height: 16),
-                TextField(controller: nomeController, decoration: const InputDecoration(labelText: 'Nome do Membro', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: saldoController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Saldo (R\$)', border: OutlineInputBorder())),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-            ElevatedButton(
-              onPressed: () async {
-                final nome = nomeController.text.trim();
-                final saldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
-                if (nome.isNotEmpty) {
-                  await _db.collection('families').doc(_familyId).collection('members').doc(membroId).update({
-                    'nome': nome,
-                    'saldo': saldo,
-                    'imageUrl': fotoBase64 ?? 'https://i.pravatar.cc/150?img=12',
-                    'updatedAt': FieldValue.serverTimestamp(),
-                  });
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _excluirMembro(BuildContext context, String membroId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir Membro'),
-        content: const Text('Tem certeza que deseja remover este membro?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () async {
-              Navigator.pop(context);
-              await _db.collection('families').doc(_familyId).collection('members').doc(membroId).delete();
-            },
-            child: const Text('Excluir', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -541,5 +347,3 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-}
