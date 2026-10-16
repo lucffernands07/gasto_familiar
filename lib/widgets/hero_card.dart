@@ -6,19 +6,15 @@ import '../services/family_service.dart';
 class HeroCard extends StatefulWidget {
   final bool mostrarSaldo;
   final VoidCallback onToggleVisibility;
-  final String abaAtiva;
-  final ValueChanged<String> onAbaChanged;
-  final DateTime mesSelecionado; // <- Novo: Recebe o mês selecionado
-  final VoidCallback? onTapSaldoFamilia; // <- Novo: Ação ao clicar no Saldo Família
-  final VoidCallback? onTapReceitas; // <- Novo: Ação ao clicar em Receitas
-  final VoidCallback? onTapGastos; // <- Novo: Ação ao clicar em Gastos
+  final DateTime mesSelecionado;
+  final VoidCallback? onTapSaldoFamilia;
+  final VoidCallback? onTapReceitas;
+  final VoidCallback? onTapGastos;
 
   const HeroCard({
     super.key,
     required this.mostrarSaldo,
     required this.onToggleVisibility,
-    required this.abaAtiva,
-    required this.onAbaChanged,
     required this.mesSelecionado,
     this.onTapSaldoFamilia,
     this.onTapReceitas,
@@ -90,7 +86,7 @@ class _HeroCardState extends State<HeroCard> {
                   
                   if (dataTx.year != widget.mesSelecionado.year || 
                       dataTx.month != widget.mesSelecionado.month) {
-                    continue; // Ignora transações que não sejam do mês selecionado
+                    continue; 
                   }
                 }
 
@@ -136,68 +132,7 @@ class _HeroCardState extends State<HeroCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Linha Superior: Visão Geral e Planilha
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: () => widget.onAbaChanged('visao_geral'),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Visão Geral',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: widget.abaAtiva == 'visao_geral' ? FontWeight.bold : FontWeight.w500,
-                                color: const Color(0xFF333333),
-                              ),
-                            ),
-                            if (widget.abaAtiva == 'visao_geral') ...[
-                              const SizedBox(width: 4),
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      GestureDetector(
-                        onTap: () => widget.onAbaChanged('planilha'),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Planilha',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: widget.abaAtiva == 'planilha' ? FontWeight.bold : FontWeight.w500,
-                                color: const Color(0xFF333333),
-                              ),
-                            ),
-                            if (widget.abaAtiva == 'planilha') ...[
-                              const SizedBox(width: 4),
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 2. Saudação
+                  // Saudação limpa sem abas
                   Text(
                     'Olá, $_greetingName!',
                     style: const TextStyle(
@@ -210,7 +145,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 2),
 
-                  // 3. Subtítulo
+                  // Subtítulo
                   const Text(
                     'Resumo deste mês',
                     style: TextStyle(
@@ -272,7 +207,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Cartão Saldo Família (Clicável para atualizar)
+                  // Cartão Saldo Família (Clicável)
                   GestureDetector(
                     onTap: widget.onTapSaldoFamilia,
                     child: _buildItemCard(
@@ -284,7 +219,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Receitas (Clicável para lançar receita)
+                  // Cartão Receitas (Clicável)
                   GestureDetector(
                     onTap: widget.onTapReceitas,
                     child: _buildItemCard(
@@ -296,7 +231,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Gastos (Clicável para lançar despesa)
+                  // Cartão Gastos (Clicável)
                   GestureDetector(
                     onTap: widget.onTapGastos,
                     child: _buildItemCard(
