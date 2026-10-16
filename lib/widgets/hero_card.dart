@@ -92,7 +92,6 @@ class _HeroCardState extends State<HeroCard> {
               }
             }
 
-            // O saldo total e previsto agora baseiam-se estritamente nas transações (sem misturar com saldo de membros)
             final saldoTotal = receitasEfetivas - gastosEfetivos;
             final saldoPrevio = receitasPrevias - gastosPrevios;
 
@@ -117,80 +116,81 @@ class _HeroCardState extends State<HeroCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 1. Linha Superior: Visão Geral e Planilha alinhados à direita
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Olá, $_greetingName!',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333),
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      GestureDetector(
+                        onTap: () => widget.onAbaChanged('visao_geral'),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Visão Geral',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: widget.abaAtiva == 'visao_geral' ? FontWeight.bold : FontWeight.w500,
+                                color: const Color(0xFF333333),
+                              ),
+                            ),
+                            if (widget.abaAtiva == 'visao_geral') ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => widget.onAbaChanged('visao_geral'),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Visão Geral',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: widget.abaAtiva == 'visao_geral' ? FontWeight.bold : FontWeight.w500,
-                                    color: const Color(0xFF333333),
-                                  ),
-                                ),
-                                if (widget.abaAtiva == 'visao_geral') ...[
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                      const SizedBox(width: 14),
+                      GestureDetector(
+                        onTap: () => widget.onAbaChanged('planilha'),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Planilha',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: widget.abaAtiva == 'planilha' ? FontWeight.bold : FontWeight.w500,
+                                color: const Color(0xFF333333),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 14),
-                          GestureDetector(
-                            onTap: () => widget.onAbaChanged('planilha'),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Planilha',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: widget.abaAtiva == 'planilha' ? FontWeight.bold : FontWeight.w500,
-                                    color: const Color(0xFF333333),
-                                  ),
+                            if (widget.abaAtiva == 'planilha') ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
                                 ),
-                                if (widget.abaAtiva == 'planilha') ...[
-                                  const SizedBox(width: 4),
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
+
+                  // 2. Linha de Baixo: Saudação com o nome completo (sem esmagar)
+                  Text(
+                    'Olá, $_greetingName!',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+
+                  // 3. Subtítulo
                   const Text(
                     'Resumo deste mês',
                     style: TextStyle(
