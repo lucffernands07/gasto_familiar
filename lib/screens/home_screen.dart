@@ -187,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               final novoSaldo = double.tryParse(saldoController.text.replaceAll(',', '.')) ?? 0.0;
               
-              // Atualização direta utilizando a notação de ponto do Firestore para garantir a persistência correta
               await _db.collection('families').doc(_familyId).set({
                 'saldosMensais': {
                   chaveMes: novoSaldo,
@@ -199,7 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
               }
               
-              // Força a atualização do ecrã localmente
               setState(() {});
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
@@ -372,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           actions: [
-            TextButton(onNotFound: () {}, onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             ElevatedButton(
               onPressed: () async {
                 final valor = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
