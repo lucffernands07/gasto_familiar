@@ -6,17 +6,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PlanilhaView extends StatelessWidget {
   final String familyId;
   final bool mostrarSaldo;
+  final DateTime mesSelecionado; // <- Adicionado
 
   const PlanilhaView({
     super.key,
     required this.familyId,
     required this.mostrarSaldo,
+    required this.mesSelecionado, // <- Adicionado
   });
 
   Future<void> _registrarHistorico(String acao, String detalhes) async {
     final user = FirebaseAuth.instance.currentUser;
     final prefs = await SharedPreferences.getInstance();
-    // Puxa o nome do telemóvel definido nas Configurações
     final nomeDispositivo = prefs.getString('device_nickname') ?? 'Dispositivo Padrão';
 
     await FirebaseFirestore.instance
@@ -27,7 +28,7 @@ class PlanilhaView extends StatelessWidget {
       'acao': acao,
       'detalhes': detalhes,
       'usuario': user?.email ?? 'Usuário',
-      'ip': nomeDispositivo, // Grava o nome do aparelho no histórico
+      'ip': nomeDispositivo,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -152,6 +153,16 @@ class PlanilhaView extends StatelessWidget {
 
         for (var doc in snapshot.data!.docs) {
           final data = doc.data() as Map<String, dynamic>;
+          
+          // Filtrar por mês e ano selecionados
+          if (data['createdAt'] != null) {
+            final Timestamp timestamp = data['createdAt'];
+            final DateTime dataTx = timestamp.toDate();
+            if (dataTx.year != mesSelecionado.year || dataTx.month != mesSelecionado.month) {
+              continue; // Ignora se não pertencer ao mês selecionado
+            }
+          }
+
           final categoria = data['categoria'] ?? 'Geral';
           final tipo = data['tipo'] ?? 'despesa';
 
@@ -164,6 +175,27 @@ class PlanilhaView extends StatelessWidget {
             'tipo': tipo,
           });
           tiposPorCategoria[categoria] = tipo;
+        }
+
+        if (tabelasPorCategoria.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFDF8),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFEFEBE4)),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFF888888)),
+                SizedBox(height: 12),
+                Text('Nenhuma transação neste mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                SizedBox(height: 6),
+                Text('Altere o mês no topo ou clique em "+ Lançar".', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+              ],
+            ),
+          );
         }
 
         return Column(
