@@ -4,36 +4,43 @@ import 'package:intl/intl.dart';
 
 class HistoricoScreen extends StatelessWidget {
   final String familyId;
+  final bool isDarkMode;
 
-  const HistoricoScreen({super.key, required this.familyId});
+  const HistoricoScreen({super.key, required this.familyId, required this.isDarkMode});
 
   @override
   Widget build(BuildContext context) {
+    final Color bgColor = isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
+    final Color cardColor = isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFFFDF8);
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF333333);
+    final Color subtitleColor = isDarkMode ? Colors.white70 : const Color(0xFF666666);
+    final Color borderColor = isDarkMode ? Colors.white24 : const Color(0xFFEFEBE4);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6EE),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFAF6EE),
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
         elevation: 0,
-        title: const Text('Histórico de Atividades', style: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Color(0xFF333333)),
+        title: Text('Histórico de Atividades', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('families')
             .doc(familyId)
             .collection('history')
-            .orderBy('createdAt', descending: true) // Mais recente primeiro
+            .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF4A4A4A)));
+            return Center(child: CircularProgressIndicator(color: textColor));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'Nenhum histórico registrado ainda.',
-                style: TextStyle(color: Color(0xFF666666), fontSize: 16),
+                style: TextStyle(color: subtitleColor, fontSize: 16),
               ),
             );
           }
@@ -58,9 +65,9 @@ class HistoricoScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFDF8),
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFEFEBE4)),
+                  border: Border.all(color: borderColor),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.02),
@@ -77,25 +84,25 @@ class HistoricoScreen extends StatelessWidget {
                       children: [
                         Text(
                           acao,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2C3E50)),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDarkMode ? Colors.lightBlueAccent : const Color(0xFF2C3E50)),
                         ),
                         Text(
                           dataFormatada,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+                          style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white60 : const Color(0xFF888888)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       detalhes,
-                      style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
+                      style: TextStyle(fontSize: 14, color: textColor),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Por: $usuario', style: const TextStyle(fontSize: 11, color: Color(0xFF666666))),
-                        Text('Sessão/IP: $ip', style: const TextStyle(fontSize: 11, color: Color(0xFF888888))),
+                        Text('Por: $usuario', style: TextStyle(fontSize: 11, color: subtitleColor)),
+                        Text('Sessão/IP: $ip', style: TextStyle(fontSize: 11, color: isDarkMode ? Colors.white60 : const Color(0xFF888888))),
                       ],
                     ),
                   ],
