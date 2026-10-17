@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _mostrarSaldo = true;
+  bool _isDarkMode = false; // Estado do Modo Escuro
   DateTime _mesSelecionado = DateTime.now();
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   String _familyId = 'familia_default';
@@ -49,9 +50,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final userPhoto = user?.photoURL;
     final fallbackLetter = user?.email != null && user!.email!.isNotEmpty ? user.email![0].toUpperCase() : 'U';
 
+    // Cores dinâmicas com base no modo escuro
+    final Color backgroundColor = _isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
+    final Color textColor = _isDarkMode ? Colors.white : const Color(0xFF333333);
+    final Color titleColor = _isDarkMode ? Colors.white70 : const Color(0xFF4A4A4A);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF6EE),
-      drawer: CustomDrawer(onFamilyChanged: _carregarDadosIniciais),
+      backgroundColor: backgroundColor,
+      drawer: CustomDrawer(
+        onFamilyChanged: _carregarDadosIniciais,
+        isDarkMode: _isDarkMode,
+        onThemeChanged: (bool value) {
+          setState(() {
+            _isDarkMode = value;
+          });
+        },
+      ),
       body: GestureDetector(
         onHorizontalDragEnd: (details) {
           if (details.primaryVelocity! < 0) {
@@ -67,9 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTopBar(context, userPhoto, fallbackLetter),
+                _buildTopBar(context, userPhoto, fallbackLetter, titleColor, textColor),
                 const SizedBox(height: 12),
-                _buildBarraNavegacaoMes(),
+                _buildBarraNavegacaoMes(textColor),
                 const SizedBox(height: 12),
                 
                 // Efeito de transição suave (AnimatedSwitcher) ao mudar de mês
@@ -103,9 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTapGastos: () => _mostrarDialogLancarTransacao(context, tipoInicial: 'despesa'),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'Transações do Mês',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: textColor),
                       ),
                       const SizedBox(height: 12),
                       PlanilhaView(
@@ -128,15 +142,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopBar(BuildContext context, String? photoUrl, String fallbackLetter) {
+  Widget _buildTopBar(BuildContext context, String? photoUrl, String fallbackLetter, Color titleColor, Color iconColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Builder(builder: (ctx) => IconButton(
-          icon: const Icon(Icons.menu_rounded, size: 32, color: Color(0xFF333333)),
+          icon: Icon(Icons.menu_rounded, size: 32, color: iconColor),
           onPressed: () => Scaffold.of(ctx).openDrawer(),
         )),
-        Text(_appTitle, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF4A4A4A), letterSpacing: -0.5)),
+        Text(_appTitle, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: titleColor, letterSpacing: -0.5)),
         CircleAvatar(
           radius: 20,
           backgroundColor: const Color(0xFFFFCBDD),
@@ -149,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBarraNavegacaoMes() {
+  Widget _buildBarraNavegacaoMes(Color textColor) {
     final meses = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -159,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -173,19 +187,19 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Color(0xFF333333)),
+            icon: Icon(Icons.chevron_left, color: textColor),
             onPressed: () => _mudarMes(-1),
           ),
           Text(
             textoMes,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF333333),
+              color: textColor,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Color(0xFF333333)),
+            icon: Icon(Icons.chevron_right, color: textColor),
             onPressed: () => _mudarMes(1),
           ),
         ],
@@ -200,13 +214,18 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFAF6EE),
+        backgroundColor: _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Saldo Família (${_mesSelecionado.month}/${_mesSelecionado.year})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Saldo Família (${_mesSelecionado.month}/${_mesSelecionado.year})', style: TextStyle(fontWeight: FontWeight.bold, color: _isDarkMode ? Colors.white : Colors.black87)),
         content: TextField(
           controller: saldoController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Saldo Família deste Mês (R\$)', border: OutlineInputBorder()),
+          style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
+          decoration: InputDecoration(
+            labelText: 'Saldo Família deste Mês (R\$)',
+            labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+            border: const OutlineInputBorder(),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
@@ -283,9 +302,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          backgroundColor: const Color(0xFFFAF6EE),
+          backgroundColor: _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Nova Transação', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: Text('Nova Transação', style: TextStyle(fontWeight: FontWeight.bold, color: _isDarkMode ? Colors.white : Colors.black87)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -341,7 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       onChanged: (val) => categoriaController.text = val,
-                      decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder()),
+                      style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
+                      decoration: InputDecoration(
+                        labelText: 'Nome da Coluna / Categoria',
+                        labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+                        border: const OutlineInputBorder(),
+                      ),
                     );
                   },
                 ),
@@ -366,7 +390,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       onChanged: (val) => descricaoController.text = val,
-                      decoration: const InputDecoration(labelText: 'Descrição (Ex: Salário / Luz)', border: OutlineInputBorder()),
+                      style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
+                      decoration: InputDecoration(
+                        labelText: 'Descrição (Ex: Salário / Luz)',
+                        labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+                        border: const OutlineInputBorder(),
+                      ),
                     );
                   },
                 ),
@@ -374,12 +403,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 TextField(
                   controller: valorController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+                  style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Valor (R\$)',
+                    labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: statusSelecionado,
-                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
+                  dropdownColor: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                  style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Status',
+                    labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
+                    border: const OutlineInputBorder(),
+                  ),
                   items: tipoSelecionado == 'receita'
                       ? const [
                           DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
@@ -419,11 +459,4 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+              child: const T
