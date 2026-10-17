@@ -459,4 +459,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-              child: const T
+              child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
