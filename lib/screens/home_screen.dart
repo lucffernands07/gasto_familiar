@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/family_service.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/hero_card.dart';
@@ -32,10 +33,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _carregarDadosIniciais() async {
     final activeId = await FamilyService().getActiveFamilyId();
     final title = await FamilyService().getAppTitle();
+    
+    // Carregar a preferência salva do Modo Escuro
+    final prefs = await SharedPreferences.getInstance();
+    final darkModeSaved = prefs.getBool('is_dark_mode') ?? false;
+
     setState(() {
       _familyId = activeId;
       _appTitle = title;
+      _isDarkMode = darkModeSaved;
     });
+  }
+
+  // Função para alternar e salvar o tema na memória do aparelho
+  Future<void> _alternarTema(bool value) async {
+    setState(() {
+      _isDarkMode = value;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_dark_mode', value);
   }
 
   void _mudarMes(int direcao) {
@@ -61,9 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onFamilyChanged: _carregarDadosIniciais,
         isDarkMode: _isDarkMode,
         onThemeChanged: (bool value) {
-          setState(() {
-            _isDarkMode = value;
-          });
+          _alternarTema(value);
         },
       ),
       body: GestureDetector(
