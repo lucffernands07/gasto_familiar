@@ -8,8 +8,15 @@ import '../screens/historico_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   final VoidCallback onFamilyChanged;
+  final ValueChanged<bool>? onThemeChanged; // Callback para alternar o tema
+  final bool isDarkMode; // Estado atual do modo escuro
 
-  const CustomDrawer({super.key, required this.onFamilyChanged});
+  const CustomDrawer({
+    super.key,
+    required this.onFamilyChanged,
+    this.onThemeChanged,
+    this.isDarkMode = false,
+  });
 
   @override
   State<CustomDrawer> createState() => _CustomDrawerState();
@@ -58,17 +65,23 @@ class _CustomDrawerState extends State<CustomDrawer> {
     final fallbackLetter = nomeUsuario.isNotEmpty ? nomeUsuario[0].toUpperCase() : 'U';
 
     return Drawer(
-      backgroundColor: const Color(0xFFFAF6EE),
+      backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            decoration: BoxDecoration(
+              gradient: widget.isDarkMode
+                  ? const LinearGradient(
+                      colors: [Color(0xFF333333), Color(0xFF222222)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,27 +116,40 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(nomeUsuario, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                const Text('Toque na foto para alterar', style: TextStyle(fontSize: 11, color: Color(0xFF666666))),
+                Text(
+                  nomeUsuario,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: widget.isDarkMode ? Colors.white : const Color(0xFF333333),
+                  ),
+                ),
+                Text(
+                  'Toque na foto para alterar',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: widget.isDarkMode ? Colors.white70 : const Color(0xFF666666),
+                  ),
+                ),
               ],
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.home_outlined),
-            title: const Text('Início'),
+            leading: Icon(Icons.home_outlined, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
+            title: Text('Início', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
             onTap: () => Navigator.pop(context),
           ),
           ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Configurações'),
+            leading: Icon(Icons.settings_outlined, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
+            title: Text('Configurações', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())).then((_) => widget.onFamilyChanged());
             },
           ),
           ListTile(
-            leading: const Icon(Icons.history_rounded),
-            title: const Text('Histórico'),
+            leading: Icon(Icons.history_rounded, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
+            title: Text('Histórico', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
             onTap: () async {
               Navigator.pop(context);
               final familyId = await FamilyService().getActiveFamilyId();
@@ -132,6 +158,27 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   context,
                   MaterialPageRoute(builder: (context) => HistoricoScreen(familyId: familyId)),
                 );
+              }
+            },
+          ),
+          const Divider(),
+          // Interruptor do Modo Escuro
+          SwitchListTile(
+            secondary: Icon(
+              widget.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+              color: widget.isDarkMode ? Colors.amberAccent : Colors.grey[700],
+            ),
+            title: Text(
+              'Modo Escuro',
+              style: TextStyle(
+                color: widget.isDarkMode ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            value: widget.isDarkMode,
+            onChanged: (bool value) {
+              if (widget.onThemeChanged != null) {
+                widget.onThemeChanged!(value);
               }
             },
           ),
