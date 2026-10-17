@@ -144,7 +144,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
             title: Text('Configurações', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())).then((_) => widget.onFamilyChanged());
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsScreen(isDarkMode: widget.isDarkMode), // Passa o modo escuro
+                ),
+              ).then((_) => widget.onFamilyChanged());
             },
           ),
           ListTile(
@@ -156,7 +161,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
               if (context.mounted) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => HistoricoScreen(familyId: familyId)),
+                  MaterialPageRoute(
+                    builder: (context) => HistoricoScreen(familyId: familyId, isDarkMode: widget.isDarkMode), // Passa o modo escuro
+                  ),
                 );
               }
             },
