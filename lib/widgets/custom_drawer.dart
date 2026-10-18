@@ -5,7 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import '../services/family_service.dart';
 import '../screens/settings_screen.dart';
 import '../screens/historico_screen.dart';
-import '../screens/privacy_screen.dart'; // Import do ecrã de política
+import '../screens/privacy_screen.dart';
+import '../screens/terms_screen.dart'; // Import do ecrã de termos de uso
 
 class CustomDrawer extends StatefulWidget {
   final VoidCallback onFamilyChanged;
@@ -190,7 +191,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
             },
           ),
           const Divider(),
-          // Opção de Política de Privacidade inserida antes do Sair
           ListTile(
             leading: Icon(Icons.privacy_tip_outlined, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
             title: Text('Política de Privacidade', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
@@ -200,6 +200,19 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => PrivacyScreen(isDarkMode: widget.isDarkMode),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.description_outlined, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
+            title: Text('Termos de Uso', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TermsScreen(isDarkMode: widget.isDarkMode),
                 ),
               );
             },
