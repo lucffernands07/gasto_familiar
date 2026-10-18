@@ -306,7 +306,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final valorController = TextEditingController();
     final descricaoController = TextEditingController();
-    final categoriaController = TextEditingController(text: tipoInicial == 'receita' ? 'Receita' : 'Despesas Fixas');
+    final categoriaController = TextEditingController(); // Começa totalmente vazio, sem textos pré-definidos!
+    
     String tipoSelecionado = tipoInicial;
     String statusSelecionado = tipoInicial == 'receita' ? 'Recebido' : 'Pago';
 
@@ -331,10 +332,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       selected: tipoSelecionado == 'receita',
                       selectedColor: const Color(0xFFA8E6CF),
                       onSelected: (selected) {
+                        if (!selected) return;
                         setStateDialog(() {
                           tipoSelecionado = 'receita';
-                          categoriaController.text = 'Receita';
                           statusSelecionado = 'Recebido';
+                          categoriaController.clear(); // Limpa ao trocar para receita
                         });
                       },
                     ),
@@ -344,10 +346,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       selected: tipoSelecionado == 'despesa',
                       selectedColor: const Color(0xFFFF8B94),
                       onSelected: (selected) {
+                        if (!selected) return;
                         setStateDialog(() {
                           tipoSelecionado = 'despesa';
-                          categoriaController.text = 'Despesas Fixas';
                           statusSelecionado = 'Pago';
+                          categoriaController.clear(); // Limpa ao trocar para despesa
                         });
                       },
                     ),
@@ -357,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Autocomplete<String>(
                   optionsBuilder: (TextEditingValue textEditingValue) {
                     if (textEditingValue.text == '') {
-                      return categoriasExistentes;
+                      return categoriasExistentes; // Mostra o histórico completo se clicar vazio
                     }
                     return categoriasExistentes.where((String option) {
                       return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
@@ -367,9 +370,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     categoriaController.text = selection;
                   },
                   fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                    if (controller.text.isEmpty && categoriaController.text.isNotEmpty) {
-                      controller.text = categoriaController.text;
-                    }
                     return TextField(
                       controller: controller,
                       focusNode: focusNode,
@@ -387,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Autocomplete<String>(
                   optionsBuilder: (TextEditingValue textEditingValue) {
                     if (textEditingValue.text == '') {
-                      return descricoesExistentes;
+                      return descricoesExistentes; // Mostra histórico de descrições
                     }
                     return descricoesExistentes.where((String option) {
                       return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
@@ -397,9 +397,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     descricaoController.text = selection;
                   },
                   fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                    if (controller.text.isEmpty && descricaoController.text.isNotEmpty) {
-                      controller.text = descricaoController.text;
-                    }
                     return TextField(
                       controller: controller,
                       focusNode: focusNode,
@@ -426,7 +423,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: statusSelecionado,
+                  value: ['Recebido', 'Pago', 'Pendente'].contains(statusSelecionado) 
+                      ? statusSelecionado 
+                      : (tipoSelecionado == 'receita' ? 'Recebido' : 'Pago'),
                   dropdownColor: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                   style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
@@ -461,7 +460,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (valor > 0) {
                   final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
                   
-                  // Mantém o dia atual, mas garante que o mês e o ano correspondem ao mês selecionado no topo
                   final agora = DateTime.now();
                   final ultimoDiaDoMes = DateTime(_mesSelecionado.year, _mesSelecionado.month + 1, 0).day;
                   final diaApropriado = agora.day > ultimoDiaDoMes ? ultimoDiaDoMes : agora.day;
@@ -481,10 +479,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     'valor': valor,
                     'tipo': tipoSelecionado,
                     'status': statusSelecionado,
-                    'createdAt': Timestamp.fromDate(dataParaSalvar), // Grava com a data do mês selecionado
+                    'createdAt': Timestamp.fromDate(dataParaSalvar),
                   });
 
                   if (context.mounted) Navigator.pop(context);
+                  setState(() {});
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
@@ -495,4 +494,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
+                                
