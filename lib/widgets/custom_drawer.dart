@@ -5,11 +5,12 @@ import 'package:image_picker/image_picker.dart';
 import '../services/family_service.dart';
 import '../screens/settings_screen.dart';
 import '../screens/historico_screen.dart';
+import '../screens/privacy_screen.dart'; // Import do ecrã de política
 
 class CustomDrawer extends StatefulWidget {
   final VoidCallback onFamilyChanged;
-  final ValueChanged<bool>? onThemeChanged; // Callback para alternar o tema
-  final bool isDarkMode; // Estado atual do modo escuro
+  final ValueChanged<bool>? onThemeChanged;
+  final bool isDarkMode;
 
   const CustomDrawer({
     super.key,
@@ -147,7 +148,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SettingsScreen(isDarkMode: widget.isDarkMode), // Passa o modo escuro
+                  builder: (context) => SettingsScreen(isDarkMode: widget.isDarkMode),
                 ),
               ).then((_) => widget.onFamilyChanged());
             },
@@ -162,14 +163,13 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => HistoricoScreen(familyId: familyId, isDarkMode: widget.isDarkMode), // Passa o modo escuro
+                    builder: (context) => HistoricoScreen(familyId: familyId, isDarkMode: widget.isDarkMode),
                   ),
                 );
               }
             },
           ),
           const Divider(),
-          // Interruptor do Modo Escuro
           SwitchListTile(
             secondary: Icon(
               widget.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
@@ -190,6 +190,20 @@ class _CustomDrawerState extends State<CustomDrawer> {
             },
           ),
           const Divider(),
+          // Opção de Política de Privacidade inserida antes do Sair
+          ListTile(
+            leading: Icon(Icons.privacy_tip_outlined, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
+            title: Text('Política de Privacidade', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PrivacyScreen(isDarkMode: widget.isDarkMode),
+                ),
+              );
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
             title: const Text('Sair', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
