@@ -238,6 +238,7 @@ class _HeroCardState extends State<HeroCard> {
                       widget.mostrarSaldo ? 'R\$ ${receitasEfetivas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                       const Color(0xFFA8E6CF),
                       Icons.arrow_upward_rounded,
+                      subTextoPrevisto: widget.mostrarSaldo ? '(Previsto: R\$ ${receitasPrevias.toStringAsFixed(2).replaceFirst('.', ',')})' : '(Previsto: R\$ ••••••)',
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -250,6 +251,7 @@ class _HeroCardState extends State<HeroCard> {
                       widget.mostrarSaldo ? 'R\$ ${gastosEfetivos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                       const Color(0xFFFF8B94),
                       Icons.arrow_downward_rounded,
+                      subTextoPrevisto: widget.mostrarSaldo ? '(Previsto: R\$ ${gastosPrevios.toStringAsFixed(2).replaceFirst('.', ',')})' : '(Previsto: R\$ ••••••)',
                     ),
                   ),
                 ],
@@ -261,7 +263,7 @@ class _HeroCardState extends State<HeroCard> {
     );
   }
 
-  Widget _buildItemCard(String titulo, String valor, Color corIcone, IconData icone) {
+  Widget _buildItemCard(String titulo, String valor, Color corIcone, IconData icone, {String? subTextoPrevisto}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -283,13 +285,26 @@ class _HeroCardState extends State<HeroCard> {
             child: Icon(icone, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(titulo, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF555555))),
-              const SizedBox(height: 2),
-              Text(valor, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF222222))),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titulo, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF555555))),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(valor, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF222222))),
+                    if (subTextoPrevisto != null) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        subTextoPrevisto,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Color(0xFF777777)),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
