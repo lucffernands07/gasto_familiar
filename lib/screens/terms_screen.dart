@@ -1,15 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class TermsScreen extends StatelessWidget {
+class TermsScreen extends StatefulWidget {
   final bool isDarkMode;
 
   const TermsScreen({super.key, required this.isDarkMode});
 
   @override
+  State<TermsScreen> createState() => _TermsScreenState();
+}
+
+class _TermsScreenState extends State<TermsScreen> {
+  bool _aceito = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarStatusAceitacao();
+  }
+
+  Future<void> _carregarStatusAceitacao() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _aceito = prefs.getBool('terms_accepted') ?? false;
+    });
+  }
+
+  Future<void> _salvarStatusAceitacao(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('terms_accepted', value);
+    setState(() {
+      _aceito = value;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
-    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF333333);
-    final Color cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color backgroundColor = widget.isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
+    final Color textColor = widget.isDarkMode ? Colors.white : const Color(0xFF333333);
+    final Color cardColor = widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -37,14 +66,41 @@ class TermsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Termos e Condições de Uso',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Termos e Condições de Uso',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                    ),
+                  ),
+                  if (_aceito)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.check_circle_outline, size: 14, color: Colors.green),
+                          SizedBox(width: 4),
+                          Text(
+                            'Aceito',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 10),
               Text(
                 'Última atualização: Outubro de 2026',
-                style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.grey[600]),
               ),
               const Divider(height: 24),
               _buildSecao(
@@ -66,6 +122,26 @@ class TermsScreen extends StatelessWidget {
                 '4. Modificações e Disponibilidade',
                 'Reservamo-nos o direito de modificar, suspender ou encerrar a aplicação ou os seus recursos a qualquer momento, sem aviso prévio.',
                 textColor,
+              ),
+              const Divider(height: 24),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFFA8E6CF),
+                checkColor: const Color(0xFF2C3E50),
+                title: Text(
+                  'Li e concordo com os Termos de Uso',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _aceito ? textColor.withOpacity(0.6) : textColor,
+                  ),
+                ),
+                value: _aceito,
+                onChanged: (bool? value) {
+                  if (value != null) {
+                    _salvarStatusAceitacao(value);
+                  }
+                },
               ),
             ],
           ),
