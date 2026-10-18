@@ -460,13 +460,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 if (valor > 0) {
                   final transId = _db.collection('families').doc(_familyId).collection('transactions').doc().id;
+                  
+                  // Mantém o dia atual, mas garante que o mês e o ano correspondem ao mês selecionado no topo
+                  final agora = DateTime.now();
+                  final ultimoDiaDoMes = DateTime(_mesSelecionado.year, _mesSelecionado.month + 1, 0).day;
+                  final diaApropriado = agora.day > ultimoDiaDoMes ? ultimoDiaDoMes : agora.day;
+                  
+                  final dataParaSalvar = DateTime(
+                    _mesSelecionado.year,
+                    _mesSelecionado.month,
+                    diaApropriado,
+                    agora.hour,
+                    agora.minute,
+                    agora.second,
+                  );
+
                   await _db.collection('families').doc(_familyId).collection('transactions').doc(transId).set({
                     'categoria': categoria.isNotEmpty ? categoria : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesas'),
                     'descricao': descricao.isNotEmpty ? descricao : (tipoSelecionado == 'receita' ? 'Receita' : 'Despesa'),
                     'valor': valor,
                     'tipo': tipoSelecionado,
                     'status': statusSelecionado,
-                    'createdAt': FieldValue.serverTimestamp(),
+                    'createdAt': Timestamp.fromDate(dataParaSalvar), // Grava com a data do mês selecionado
                   });
 
                   if (context.mounted) Navigator.pop(context);
