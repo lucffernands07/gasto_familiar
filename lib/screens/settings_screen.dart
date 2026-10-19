@@ -48,6 +48,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
+  // Função para processar a exclusão segura da conta
+  void _confirmarEExcluirConta(BuildContext context, User? user, Color cardColor, Color textColor, Color subtitleColor) {
+    final emailController = TextEditingController();
+    final emailLogado = user?.email ?? '';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: cardColor,
+        title: Text('Eliminar Conta', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tem certeza absoluta de que deseja eliminar a sua conta e todos os dados associados? Esta ação é irreversível.',
+              style: TextStyle(color: subtitleColor, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Para confirmar, digite o seu e-mail ($emailLogado):',
+              style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: emailController,
+              style: TextStyle(color: textColor),
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                hintText: 'Digite o seu e-mail aqui',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+              final emailDigitado = emailController.text.trim();
+              if (emailDigitado != emailLogado) {
+                _mostrarMensagem('O e-mail digitado não corresponde à conta atual.');
+                return;
+              }
+
+              Navigator.pop(context); // Fecha o dialog
+              setState(() => _isLoading = true);
+
+              try {
+                // Envia email informativo do Firebase antes de excluir
+                await user?.sendEmailVerification(); // Ou envio de aviso personalizado se aplicável
+                
+                // Exclui a conta do Firebase Auth
+                await user?.delete();
+
+                // Limpa os dados locais de termos/preferências
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+
+                _mostrarMensagem('Conta eliminada com sucesso. Uma nova conta poderá ser criada ao entrar novamente.');
+              } catch (e) {
+                _mostrarMensagem('Erro ao excluir conta: $e. Poderá ser necessário reautenticar-se.');
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
+            },
+            child: const Text('Eliminar Definitivamente', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -120,38 +197,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _mostrarMensagem('Configurações salvas com sucesso!');
                   },
                   child: const Text('Salvar Alterações', style: TextStyle(color: Color(0xFF2C3E50))),
-                ),
-                const SizedBox(height: 24),
-                Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('UID do Utilizador / Banco', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            const SizedBox(height: 4),
-                            Text(uid, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.copy, color: textColor),
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: uid));
-                          _mostrarMensagem('UID copiado!');
-                        },
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 24),
                 Text('Gestão de Dados', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
@@ -300,6 +345,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     );
                   },
+                ),
+                const SizedBox(height: 12),
+                // Botão de Excluir Conta posicionado antes da Identificação do Banco
+                ListTile(
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.person_remove_rounded, color: Colors.red),
+                  title: const Text('Excluir Conta e Dados', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Remove permanentemente a conta e dados associados', style: TextStyle(color: subtitleColor)),
+                  onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
+                ),
+                const SizedBox(height: 24),
+                // Identificação do Banco movida para o último lugar
+                Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('UID do Utilizador / Banco', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(uid, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.copy, color: textColor),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: uid));
+                          _mostrarMensagem('UID copiado!');
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
