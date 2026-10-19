@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               try {
                 // Envia email informativo do Firebase antes de excluir
-                await user?.sendEmailVerification(); // Ou envio de aviso personalizado se aplicável
+                await user?.sendEmailVerification();
                 
                 // Exclui a conta do Firebase Auth
                 await user?.delete();
@@ -315,11 +315,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+                // Zerar Banco de Dados em Laranja
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  leading: const Icon(Icons.delete_forever, color: Colors.redAccent),
-                  title: const Text('Zerar Banco de Dados', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  leading: const Icon(Icons.delete_forever, color: Colors.orange),
+                  title: const Text('Zerar Banco de Dados', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
                   subtitle: Text('Apagar todas as informações e transações', style: TextStyle(color: subtitleColor)),
                   onTap: () async {
                     showDialog(
@@ -331,7 +332,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         actions: [
                           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                             onPressed: () async {
                               Navigator.pop(context);
                               setState(() => _isLoading = true);
@@ -339,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               setState(() => _isLoading = false);
                               _mostrarMensagem('Banco zerado com sucesso.');
                             },
-                            child: const Text('Zerar'),
+                            child: const Text('Zerar', style: TextStyle(color: Colors.white)),
                           ),
                         ],
                       ),
@@ -347,7 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                // Botão de Excluir Conta posicionado antes da Identificação do Banco
+                // Excluir Conta e Dados em Vermelho
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -357,7 +358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
                 ),
                 const SizedBox(height: 24),
-                // Identificação do Banco movida para o último lugar
+                // Identificação do Banco no último lugar
                 Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
                 Container(
