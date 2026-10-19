@@ -19,6 +19,9 @@ class HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Atribuição a uma variável local para permitir a promoção de tipo (null-safety)
+    final url = photoUrl;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -40,12 +43,12 @@ class HomeTopBar extends StatelessWidget {
         CircleAvatar(
           radius: 20,
           backgroundColor: const Color(0xFFFFCBDD),
-          backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-              ? (photoUrl.startsWith('data:image')
-                  ? MemoryImage(base64Decode(photoUrl.split(',')[1])) as ImageProvider
-                  : NetworkImage(photoUrl))
+          backgroundImage: url != null && url.isNotEmpty
+              ? (url.startsWith('data:image')
+                  ? MemoryImage(base64Decode(url.split(',')[1])) as ImageProvider
+                  : NetworkImage(url))
               : null,
-          child: photoUrl == null || photoUrl.isEmpty
+          child: url == null || url.isEmpty
               ? Text(
                   fallbackLetter,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
