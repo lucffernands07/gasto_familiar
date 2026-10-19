@@ -26,14 +26,6 @@ class _TermsScreenState extends State<TermsScreen> {
     });
   }
 
-  Future<void> _salvarStatusAceitacao(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('terms_accepted', value);
-    setState(() {
-      _aceito = value;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final Color backgroundColor = widget.isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
@@ -122,26 +114,6 @@ class _TermsScreenState extends State<TermsScreen> {
                 '4. Modificações e Disponibilidade',
                 'Reservamo-nos o direito de modificar, suspender ou encerrar a aplicação ou os seus recursos a qualquer momento, sem aviso prévio.',
                 textColor,
-              ),
-              const Divider(height: 24),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFFA8E6CF),
-                checkColor: const Color(0xFF2C3E50),
-                title: Text(
-                  'Li e concordo com os Termos de Uso',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _aceito ? textColor.withOpacity(0.6) : textColor,
-                  ),
-                ),
-                value: _aceito,
-                onChanged: (bool? value) {
-                  if (value != null) {
-                    _salvarStatusAceitacao(value);
-                  }
-                },
               ),
             ],
           ),
