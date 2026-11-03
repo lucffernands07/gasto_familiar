@@ -197,36 +197,34 @@ class PlanilhaView extends StatelessWidget {
           );
         }
 
-        // Ordenar categorias: Receitas (acima) e Despesas (abaixo)
-        final sortedKeys = tabelasPorCategoria.keys.toList()
-          ..sort((a, b) {
-            final tipoA = tiposPorCategoria[a] ?? 'despesa';
-            final tipoB = tiposPorCategoria[b] ?? 'despesa';
+        final List<String> sortedKeys = tabelasPorCategoria.keys.toList()
+          ..sort((String a, String b) {
+            final String tipoA = tiposPorCategoria[a] ?? 'despesa';
+            final String tipoB = tiposPorCategoria[b] ?? 'despesa';
             if (tipoA == 'receita' && tipoB != 'receita') return -1;
             if (tipoA != 'receita' && tipoB == 'receita') return 1;
             return a.compareTo(b);
           });
 
         return Column(
-          children: sortedKeys.map((categoria) {
-            final itens = tabelasPorCategoria[categoria]!;
+          children: sortedKeys.map((String categoria) {
+            final List> itens = tabelasPorCategoria[categoria]!;
             
-            // Ordenar itens dentro da tabela: Pagos/Recebidos em cima, Pendentes em baixo
-            itens.sort((a, b) {
-              final statusA = a['status'];
-              final statusB = b['status'];
+            itens.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
+              final String statusA = a['status'];
+              final String statusB = b['status'];
               if (statusA != 'Pendente' && statusB == 'Pendente') return -1;
               if (statusA == 'Pendente' && statusB != 'Pendente') return 1;
               return 0;
             });
 
-            final tipo = tiposPorCategoria[categoria] ?? 'despesa';
-            final isReceita = tipo == 'receita';
+            final String tipo = tiposPorCategoria[categoria] ?? 'despesa';
+            final bool isReceita = tipo == 'receita';
 
             final Color corHeader = isReceita ? const Color(0xFFA8E6CF) : const Color(0xFFFF8B94);
             final Color corTextoHeader = isReceita ? const Color(0xFF1B4D3E) : const Color(0xFF5C1D24);
 
-            double totalCategoria = itens.fold(0.0, (sum, item) => sum + (item['valor'] as double));
+            double totalCategoria = itens.fold(0.0, (double sum, Map<String, dynamic> item) => sum + (item['valor'] as double));
 
             return Container(
               margin: const EdgeInsets.only(bottom: 20),
@@ -280,8 +278,8 @@ class PlanilhaView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  ...itens.map((item) {
-                    final status = item['status'];
+                  ...itens.map((Map<String, dynamic> item) {
+                    final String status = item['status'];
                     final Color corStatus = (status == 'Pago' || status == 'Recebido') ? Colors.green : Colors.red;
 
                     return InkWell(
