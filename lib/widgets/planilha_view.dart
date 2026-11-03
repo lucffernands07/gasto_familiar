@@ -6,13 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PlanilhaView extends StatelessWidget {
   final String familyId;
   final bool mostrarSaldo;
-  final DateTime mesSelecionado; // <- Adicionado
+  final DateTime mesSelecionado;
 
   const PlanilhaView({
     super.key,
     required this.familyId,
     required this.mostrarSaldo,
-    required this.mesSelecionado, // <- Adicionado
+    required this.mesSelecionado,
   });
 
   Future<void> _registrarHistorico(String acao, String detalhes) async {
@@ -148,18 +148,17 @@ class PlanilhaView extends StatelessWidget {
           );
         }
 
-        final Map<String, List<Map<String, dynamic>>> tabelasPorCategoria = {};
+        final Map<String, List>> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
         for (var doc in snapshot.data!.docs) {
           final data = doc.data() as Map<String, dynamic>;
           
-          // Filtrar por mês e ano selecionados
           if (data['createdAt'] != null) {
             final Timestamp timestamp = data['createdAt'];
             final DateTime dataTx = timestamp.toDate();
             if (dataTx.year != mesSelecionado.year || dataTx.month != mesSelecionado.month) {
-              continue; // Ignora se não pertencer ao mês selecionado
+              continue;
             }
           }
 
@@ -198,10 +197,29 @@ class PlanilhaView extends StatelessWidget {
           );
         }
 
+        // Ordenar categorias: Receitas (acima) e Despesas (abaixo)
+        final sortedKeys = tabelasPorCategoria.keys.toList()
+          ..sort((a, b) {
+            final tipoA = tiposPorCategoria[a] ?? 'despesa';
+            final tipoB = tiposPorCategoria[b] ?? 'despesa';
+            if (tipoA == 'receita' && tipoB != 'receita') return -1;
+            if (tipoA != 'receita' && tipoB == 'receita') return 1;
+            return a.compareTo(b);
+          });
+
         return Column(
-          children: tabelasPorCategoria.entries.map((entry) {
-            final categoria = entry.key;
-            final itens = entry.value;
+          children: sortedKeys.map((categoria) {
+            final itens = tabelasPorCategoria[categoria]!;
+            
+            // Ordenar itens dentro da tabela: Pagos/Recebidos em cima, Pendentes em baixo
+            itens.sort((a, b) {
+              final statusA = a['status'];
+              final statusB = b['status'];
+              if (statusA != 'Pendente' && statusB == 'Pendente') return -1;
+              if (statusA == 'Pendente' && statusB != 'Pendente') return 1;
+              return 0;
+            });
+
             final tipo = tiposPorCategoria[categoria] ?? 'despesa';
             final isReceita = tipo == 'receita';
 
@@ -262,53 +280,58 @@ class PlanilhaView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  ...itens.map((item) => InkWell(
-                        onTap: () => _mostrarDialogEditarTransacao(context, item['id'], {
-                          'categoria': categoria,
-                          'descricao': item['descricao'],
-                          'valor': item['valor'],
-                          'status': item['status'],
-                          'tipo': item['tipo'],
-                        }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  item['descricao'],
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF333333)),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  mostrarSaldo ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',') : '•••',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF222222)),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  item['status'],
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF111111),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                  ...itens.map((item) {
+                    final status = item['status'];
+                    final Color corStatus = (status == 'Pago' || status == 'Recebido') ? Colors.green : Colors.red;
+
+                    return InkWell(
+                      onTap: () => _mostrarDialogEditarTransacao(context, item['id'], {
+                        'categoria': categoria,
+                        'descricao': item['descricao'],
+                        'valor': item['valor'],
+                        'status': status,
+                        'tipo': item['tipo'],
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: const BoxDecoration(
+                          border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
                         ),
-                      )),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                item['descricao'],
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF333333)),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                mostrarSaldo ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',') : '•••',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF222222)),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                status,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: corStatus,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: const BoxDecoration(
