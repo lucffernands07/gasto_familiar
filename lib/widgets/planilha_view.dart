@@ -148,7 +148,6 @@ class PlanilhaView extends StatelessWidget {
           );
         }
 
-        // Correção da tipagem explícita para evitar o erro do compilador Dart
         final Map<String, List>> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
@@ -209,7 +208,6 @@ class PlanilhaView extends StatelessWidget {
 
         return Column(
           children: sortedKeys.map((String categoria) {
-            // Correção da tipagem explícita da lista de itens
             final List> itens = tabelasPorCategoria[categoria]!;
             
             itens.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
