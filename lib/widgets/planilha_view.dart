@@ -211,7 +211,7 @@ class PlanilhaView extends StatelessWidget {
 
         return Column(
           children: sortedKeys.map((String categoria) {
-            final List> itens = tabelasPorCategoria[categoria]!;
+            final itens = tabelasPorCategoria[categoria]!;
 
             // Ordenação interna: Pagos/Recebidos em cima, Pendentes em baixo
             itens.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
