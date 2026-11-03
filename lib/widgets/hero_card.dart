@@ -53,10 +53,10 @@ class _HeroCardState extends State<HeroCard> {
     final agora = DateTime.now();
     final bool ehMesAtual = widget.mesSelecionado.year == agora.year && widget.mesSelecionado.month == agora.month;
 
-    // Definir o gradiente com base no mês (Rosa/Laranja para o atual, Cinzentos para os outros)
+    // Definir o gradiente com base no mês
     final List<Color> coresGradiente = ehMesAtual
-        ? [const Color(0xFFFFCBDD), const Color(0xFFFFF3E0)] // Rosa para Laranja claro
-        : [const Color(0xFF4A4A4A), const Color(0xFF888888)]; // Cinzento escuro para cinzento claro
+        ? [const Color(0xFFFFCBDD), const Color(0xFFFFF3E0)]
+        : [const Color(0xFF4A4A4A), const Color(0xFF888888)];
 
     final Color corTextoSecundario = ehMesAtual ? const Color(0xFF666666) : Colors.white70;
     final Color corTextoPrincipal = ehMesAtual ? const Color(0xFF333333) : Colors.white;
@@ -122,8 +122,9 @@ class _HeroCardState extends State<HeroCard> {
               }
             }
 
-            final saldoTotal = saldoFamiliaMes + receitasEfetivas - gastosEfetivos;
-            final saldoPrevio = saldoFamiliaMes + receitasPrevias - gastosPrevios;
+            // AJUSTE 1: O Saldo Família não entra no cálculo do saldo total nem do previsto
+            final saldoTotal = receitasEfetivas - gastosEfetivos;
+            final saldoPrevio = receitasPrevias - gastosPrevios;
 
             return Container(
               width: double.infinity,
