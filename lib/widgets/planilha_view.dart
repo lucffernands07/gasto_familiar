@@ -149,7 +149,8 @@ class PlanilhaView extends StatelessWidget {
         }
 
         // Tipagem explícita corrigida sem erros de compilação
-        final Map<String, List> tabelasPorCategoria = {};
+                // Declaração sem aninhamento complexo para evitar erros de renderização
+        final Map<String, List<dynamic>> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
         for (var doc in snapshot.data!.docs) {
@@ -209,7 +210,7 @@ class PlanilhaView extends StatelessWidget {
 
         return Column(
           children: sortedKeys.map((categoria) {
-            final itens = tabelasPorCategoria[categoria]!;
+            final List> itens = tabelasPorCategoria[categoria]!.cast>();
             
             itens.sort((a, b) {
               final statusA = a['status'];
@@ -355,7 +356,7 @@ class PlanilhaView extends StatelessWidget {
               ),
             );
           }).toList(),
-        );         
+        );
       },
     );
   }
