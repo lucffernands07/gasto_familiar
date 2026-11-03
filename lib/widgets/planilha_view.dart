@@ -149,7 +149,7 @@ class PlanilhaView extends StatelessWidget {
         }
 
         // Tipagem explícita corrigida sem erros de compilação
-        final Map<String, List>> tabelasPorCategoria = {};
+        final Map<String, List> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
         for (var doc in snapshot.data!.docs) {
