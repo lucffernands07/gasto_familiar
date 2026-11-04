@@ -97,7 +97,19 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
     final tituloController = TextEditingController(text: isEditando ? eventoAtual['titulo'] : '');
     final valorController = TextEditingController(text: isEditando ? eventoAtual['valor'].toString().replaceFirst('.', ',') : '');
     final horasController = TextEditingController(text: isEditando ? eventoAtual['horas'].toString().replaceFirst('.', ',') : '');
-    final notaController = TextEditingController(text: isEditando ? (eventoAtual['nota'] ?? '') : '');
+    
+    // Formata as notas para texto separado por linhas no campo de edição
+    String notasTextoInicial = '';
+    if (isEditando && eventoAtual['nota'] != null) {
+      if (eventoAtual['nota'] is List) {
+        notasTextoInicial = (eventoAtual['nota'] as List)
+            .map((item) => item is Map ? item['texto']?.toString() ?? '' : item.toString())
+            .join('\n');
+      } else {
+        notasTextoInicial = eventoAtual['nota'].toString();
+      }
+    }
+    final notaController = TextEditingController(text: notasTextoInicial);
 
     showDialog(
       context: context,
@@ -130,9 +142,12 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: notaController,
-                maxLines: 3,
+                maxLines: 4,
                 style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Notas / Observações', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Notas / Observações (uma por linha)',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ],
           ),
@@ -144,14 +159,46 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
               final val = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
               final hrs = double.tryParse(horasController.text.replaceAll(',', '.')) ?? 0.0;
               final desc = tituloController.text.trim();
-              final nota = notaController.text.trim();
+              
+              final linhasNotas = notaController.text
+                  .split('\n')
+                  .where((s) => s.trim().isNotEmpty)
+                  .map((s) => {'texto': s.trim(), 'checked': false})
+                  .toList();
 
               if (desc.isNotEmpty) {
                 setState(() {
                   if (isEditando) {
-                    _eventos[indexEditando] = {'titulo': desc, 'valor': val, 'horas': hrs, 'nota': nota};
+                    final notasAntigas = _eventos[indexEditando]['nota'];
+                    List> notasfinais = [];
+                    if (notasAntigas is List) {
+                      notasfinais = linhasNotas.map((nova) {
+                        final existente = (notasAntigas as List).firstWhere(
+                          (antiga) => antiga is Map && antiga['texto'] == nova['texto'],
+                          orElse: () => null,
+                        );
+                        return {
+                          'texto': nova['texto'],
+                          'checked': existente != null && existente['checked'] == true,
+                        };
+                      }).toList();
+                    } else {
+                      notasfinais = linhasNotas;
+                    }
+
+                    _eventos[indexEditando] = {
+                      'titulo': desc,
+                      'valor': val,
+                      'horas': hrs,
+                      'nota': notasfinais,
+                    };
                   } else {
-                    _eventos.add({'titulo': desc, 'valor': val, 'horas': hrs, 'nota': nota});
+                    _eventos.add({
+                      'titulo': desc,
+                      'valor': val,
+                      'horas': hrs,
+                      'nota': linhasNotas,
+                    });
                   }
                 });
                 _salvarDados();
@@ -194,7 +241,6 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ],
         ),
       ),
-      // Botão + movido para o canto inferior direito conforme solicitado
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Container(
         decoration: BoxDecoration(
@@ -304,6 +350,12 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                                         onDelete: () {
                                           setState(() {
                                             _eventos.removeAt(index);
+                                          });
+                                          _salvarDados();
+                                        },
+                                        onUpdateNotas: (novasNotas) {
+                                          setState(() {
+                                            _eventos[index]['nota'] = novasNotas;
                                           });
                                           _salvarDados();
                                         },
