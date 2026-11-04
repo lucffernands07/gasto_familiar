@@ -9,6 +9,8 @@ import '../widgets/planilha_view.dart';
 import '../widgets/home_top_bar.dart';
 import '../widgets/month_navigation_bar.dart';
 import '../widgets/terms_dialog.dart';
+import '../widgets/calculadora_dialog.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -437,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: IconButton(
                 icon: Icon(Icons.calculate_outlined, color: _isDarkMode ? Colors.white70 : const Color(0xFF333333), size: 22),
                 tooltip: 'Calculadora',
-                onPressed: () => _abrirCalculadoraRapida(context, valorController),
+                onPressed: () => CalculadoraDialog.mostrar(context, valorController, _isDarkMode),
               ),
             ),
             Row(
