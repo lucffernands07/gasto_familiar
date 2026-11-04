@@ -6,13 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PlanilhaView extends StatelessWidget {
   final String familyId;
   final bool mostrarSaldo;
-  final DateTime mesSelecionado; // <- Adicionado
+  final DateTime mesSelecionado;
 
   const PlanilhaView({
     super.key,
     required this.familyId,
     required this.mostrarSaldo,
-    required this.mesSelecionado, // <- Adicionado
+    required this.mesSelecionado,
   });
 
   Future<void> _registrarHistorico(String acao, String detalhes) async {
@@ -31,6 +31,82 @@ class PlanilhaView extends StatelessWidget {
       'ip': nomeDispositivo,
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> _copiarTransacoesMesAnterior(BuildContext context) async {
+    final db = FirebaseFirestore.instance;
+    final mesAnterior = DateTime(mesSelecionado.year, mesSelecionado.month - 1, 1);
+
+    try {
+      final snapshot = await db
+          .collection('families')
+          .doc(familyId)
+          .collection('transactions')
+          .get();
+
+      List<QueryDocumentSnapshot> transacoesMesAnterior = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['createdAt'] != null) {
+          final Timestamp timestamp = data['createdAt'];
+          final DateTime dataTx = timestamp.toDate();
+          if (dataTx.year == mesAnterior.year && dataTx.month == mesAnterior.month) {
+            transacoesMesAnterior.add(doc);
+          }
+        }
+      }
+
+      if (transacoesMesAnterior.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Nenhuma transação encontrada no mês anterior!')),
+          );
+        }
+        return;
+      }
+
+      for (var doc in transacoesMesAnterior) {
+        final data = doc.data() as Map<String, dynamic>;
+        final novaId = db.collection('families').doc(familyId).collection('transactions').doc().id;
+        
+        final agora = DateTime.now();
+        final ultimoDiaDoMesAtual = DateTime(mesSelecionado.year, mesSelecionado.month + 1, 0).day;
+        final diaApropriado = agora.day > ultimoDiaDoMesAtual ? ultimoDiaDoMesAtual : agora.day;
+
+        final novaData = DateTime(
+          mesSelecionado.year,
+          mesSelecionado.month,
+          diaApropriado,
+          agora.hour,
+          agora.minute,
+          agora.second,
+        );
+
+        await db.collection('families').doc(familyId).collection('transactions').doc(novaId).set({
+          'categoria': data['categoria'] ?? 'Geral',
+          'descricao': data['descricao'] ?? '',
+          'valor': data['valor'] ?? 0.0,
+          'tipo': data['tipo'] ?? 'despesa',
+          'status': 'Pendente', // Forçado estritamente para Pendente conforme pedido
+          'createdAt': Timestamp.fromDate(novaData),
+        });
+      }
+
+      await _registrarHistorico('Cópia', 'Transações do mês anterior copiadas para ${mesSelecionado.month}/${mesSelecionado.year} como Pendentes');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transações copiadas com sucesso como Pendentes!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao copiar transações: $e')),
+        );
+      }
+    }
   }
 
   void _mostrarDialogEditarTransacao(BuildContext context, String transId, Map<String, dynamic> dadosAtuais) {
@@ -136,19 +212,32 @@ class PlanilhaView extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFEFEBE4)),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(Icons.table_chart_outlined, size: 48, color: Color(0xFF888888)),
-                SizedBox(height: 12),
-                Text('Nenhuma transação lançada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                SizedBox(height: 6),
-                Text('Clique em "+ Lançar" para adicionar receitas ou despesas.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+                const Icon(Icons.table_chart_outlined, size: 48, color: Color(0xFF888888)),
+                const SizedBox(height: 12),
+                const Text('Nenhuma transação lançada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                const SizedBox(height: 6),
+                const Text('Clique em "+ Lançar" para adicionar receitas ou despesas.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+                const SizedBox(height: 20),
+                const Divider(color: Color(0xFFEFEBE4)),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _copiarTransacoesMesAnterior(context),
+                  icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF2C3E50)),
+                  label: const Text('Copiar transações do mês anterior', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4E6F1),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
               ],
             ),
           );
         }
 
-        // Tipagem explícita corrigida sem erros de compilação
         final Map<String, List> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
@@ -186,13 +275,27 @@ class PlanilhaView extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFEFEBE4)),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFF888888)),
-                SizedBox(height: 12),
-                Text('Nenhuma transação neste mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                SizedBox(height: 6),
-                Text('Altere o mês no topo ou clique em "+ Lançar".', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+                const Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFF888888)),
+                const SizedBox(height: 12),
+                const Text('Nenhuma transação neste mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                const SizedBox(height: 6),
+                const Text('Altere o mês no topo ou clique em "+ Lançar".', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+                const SizedBox(height: 20),
+                const Divider(color: Color(0xFFEFEBE4)),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _copiarTransacoesMesAnterior(context),
+                  icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF2C3E50)),
+                  label: const Text('Copiar transações do mês anterior', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4E6F1),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
               ],
             ),
           );
