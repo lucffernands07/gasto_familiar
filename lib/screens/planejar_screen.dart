@@ -183,7 +183,6 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Cartão de Resumo no Topo (Corrigido para "DURAÇÃO" sem a palavra viagens)
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -248,14 +247,13 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                           },
                           itemBuilder: (context, index) {
                             final evento = _eventos[index];
-                            bool isEven = index % 2 == 0; // Alterna o zigue-zague
+                            bool isEven = index % 2 == 0;
 
                             return Column(
                               key: ValueKey(evento),
                               children: [
                                 Row(
                                   children: [
-                                    // Se for ímpar, empurra para a direita criando o zigue-zague
                                     if (!isEven) const Expanded(flex: 1, child: SizedBox(width: 20)),
                                     Expanded(
                                       flex: 3,
@@ -275,7 +273,6 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                                     if (isEven) const Expanded(flex: 1, child: SizedBox(width: 20)),
                                   ],
                                 ),
-                                // Linha roxa centralizada e um pouco mais grossa com efeito fluído/curvado estilo cobra
                                 if (index < _eventos.length - 1)
                                   SizedBox(
                                     height: 32,
@@ -295,7 +292,6 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
   }
 }
 
-// Pintor personalizado para desenhar a linha roxa em curva suave (estilo cobra) ligando os cartões em zigue-zague
 class SnakeCurvePainter extends CustomPainter {
   final bool isNextEven;
 
@@ -304,15 +300,13 @@ class SnakeCurvePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF9B59B6) // Cor roxa elegante
-      ..strokeWidth = 3.5 // Linha um pouco mais grossa conforme pedido
+      ..color = const Color(0xFF9B59B6)
+      ..strokeWidth = 3.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
-    // Inicia no centro superior
     path.moveTo(size.width / 2, 0);
-    // Cria uma curva suave (bézier) até o próximo ponto central (esquerda ou direita)
     double targetX = isNextEven ? size.width * 0.35 : size.width * 0.65;
     path.cubicTo(
       size.width / 2, size.height * 0.5,
