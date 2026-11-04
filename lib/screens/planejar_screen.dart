@@ -179,6 +179,31 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ],
         ),
       ),
+      // Posiciona o botão circular com degradê no canto inferior esquerdo
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFCBDD), Color(0xFFD4E6F1)], // Degradê de rosa para azul suave
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () => _abrirModalItem(),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.add, color: Color(0xFF2C3E50), size: 28),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -215,18 +240,18 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                     ],
                   ),
                 ),
+                // Título centralizado das etapas
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Itinerário (Arraste para ordenar)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-                      TextButton.icon(
-                        onPressed: () => _abrirModalItem(),
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Novo Item'),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Text(
+                      'Etapas do Planeamento',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: widget.isDarkMode ? Colors.white : const Color(0xFF333333),
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 Expanded(
