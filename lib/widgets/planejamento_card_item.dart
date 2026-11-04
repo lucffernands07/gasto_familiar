@@ -6,7 +6,7 @@ class PlanejamentoCardItem extends StatelessWidget {
   final bool isDarkMode;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
-  final Function(List> novasNotas)? onUpdateNotas;
+  final Function(List novasNotas)? onUpdateNotas;
 
   const PlanejamentoCardItem({
     super.key,
@@ -34,7 +34,7 @@ class PlanejamentoCardItem extends StatelessWidget {
   }
 
   // Converte a string antiga ou lista de mapas de notas para uma lista padronizada com { 'texto': String, 'checked': bool }
-  List> _obterListaNotas() {
+  List _obterListaNotas() {
     final rawNota = evento['nota'];
     if (rawNota is List) {
       return rawNota.map((item) {
