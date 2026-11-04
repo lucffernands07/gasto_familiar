@@ -6,7 +6,8 @@ import '../services/family_service.dart';
 import '../screens/settings_screen.dart';
 import '../screens/historico_screen.dart';
 import '../screens/privacy_screen.dart';
-import '../screens/terms_screen.dart'; // Import do ecrã de termos de uso
+import '../screens/terms_screen.dart';
+import '../screens/planejar_screen.dart'; // <- Import do novo ecrã de planeamento
 
 class CustomDrawer extends StatefulWidget {
   final VoidCallback onFamilyChanged;
@@ -165,6 +166,23 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => HistoricoScreen(familyId: familyId, isDarkMode: widget.isDarkMode),
+                  ),
+                );
+              }
+            },
+          ),
+          // Novo Menu Planejar integrado corretamente com o familyId
+          ListTile(
+            leading: Icon(Icons.map_outlined, color: widget.isDarkMode ? Colors.white70 : Colors.black87),
+            title: Text('Planejar', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
+            onTap: () async {
+              Navigator.pop(context);
+              final familyId = await FamilyService().getActiveFamilyId();
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PlanejarScreen(familyId: familyId, isDarkMode: widget.isDarkMode),
                   ),
                 );
               }
