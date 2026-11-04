@@ -228,7 +228,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFCBDD), Color(0xFFD4E6F1)],
+                      colors: [Color(0xFFD4E6F1), Color(0xFFFFCBDD)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
