@@ -170,7 +170,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                 setState(() {
                   if (isEditando) {
                     final notasAntigas = _eventos[indexEditando]['nota'];
-                    List> notasfinais = [];
+                    List notasfinais = [];
                     if (notasAntigas is List) {
                       notasfinais = linhasNotas.map((nova) {
                         final existente = (notasAntigas as List).firstWhere(
