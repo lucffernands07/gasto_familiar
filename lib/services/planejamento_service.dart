@@ -7,7 +7,7 @@ class PlanejamentoService {
     return await _db.collection('families').doc(familyId).collection('planejamento').doc('viagem_atual').get();
   }
 
-  Future<void> salvarPlaneamento(String familyId, String titulo, List> eventos) async {
+  Future<void> salvarPlaneamento(String familyId, String titulo, List eventos) async {
     await _db.collection('families').doc(familyId).collection('planejamento').doc('viagem_atual').set({
       'titulo': titulo,
       'eventos': eventos,
