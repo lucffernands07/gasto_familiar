@@ -36,25 +36,75 @@ class PlanejamentoCardItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.black87.withOpacity(0.85),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.amberAccent, size: 20),
-            SizedBox(width: 8),
-            Text('Notas / Observações', style: TextStyle(color: Colors.white, fontSize: 16)),
-          ],
-        ),
-        content: Text(
-          nota,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar', style: TextStyle(color: Colors.amberAccent)),
+        backgroundColor: Colors.transparent,
+        contentPadding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFF3E0), Color(0xFFFAF6EE)], // Degradê suave de amarelo claro para branco/bege da app
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.info_outline, color: Color(0xFFD4AC0D), size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    'Notas / Observações',
+                    style: TextStyle(
+                      color: Color(0xFF2C3E50),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                nota,
+                style: const TextStyle(
+                  color: Color(0xFF333333),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFCBDD), // Rosa suave do tema
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                  child: const Text(
+                    'Fechar',
+                    style: TextStyle(
+                      color: Color(0xFF2C3E50),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
