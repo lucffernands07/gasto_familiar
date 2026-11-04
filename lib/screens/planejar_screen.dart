@@ -18,11 +18,10 @@ class PlanejarScreen extends StatefulWidget {
 
 class _PlanejarScreenState extends State<PlanejarScreen> {
   final PlanejamentoService _service = PlanejamentoService();
-  String _tituloPlaneamento = 'Meu Planeamento de Viagem';
+  String _tituloPlaneamento = 'Meu Planeamento';
   final TextEditingController _tituloController = TextEditingController();
   bool _isLoading = true;
 
-  // Começa totalmente vazio conforme solicitado
   List _eventos = [];
 
   @override
@@ -37,7 +36,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         setState(() {
-          _tituloPlaneamento = data['titulo'] ?? 'Meu Planeamento de Viagem';
+          _tituloPlaneamento = data['titulo'] ?? 'Meu Planeamento';
           _eventos = List.from(data['eventos'] ?? []);
           _isLoading = false;
         });
@@ -85,16 +84,19 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
     );
   }
 
-  void _adicionarEventoModal() {
-    final tituloController = TextEditingController();
-    final valorController = TextEditingController();
-    final horasController = TextEditingController();
+  void _abrirModalItem({int? indexEditando}) {
+    final isEditando = indexEditando != null;
+    final eventoAtual = isEditando ? _eventos[indexEditando] : null;
+
+    final tituloController = TextEditingController(text: isEditando ? eventoAtual['titulo'] : '');
+    final valorController = TextEditingController(text: isEditando ? eventoAtual['valor'].toString().replaceFirst('.', ',') : '');
+    final horasController = TextEditingController(text: isEditando ? eventoAtual['horas'].toString().replaceFirst('.', ',') : '');
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
-        title: Text('Adicionar Etapa / Serviço', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
+        title: Text(isEditando ? 'Editar Etapa / Serviço' : 'Adicionar Etapa / Serviço', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -102,7 +104,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
               TextField(
                 controller: tituloController,
                 style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Descrição (Ex: Almoço, Uber...)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Descrição (Ex: Buffet, Bolo...)', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -116,7 +118,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                 controller: horasController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Tempo / Duração (Horas)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Duração (Horas)', border: OutlineInputBorder()),
               ),
             ],
           ),
@@ -131,14 +133,18 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
 
               if (desc.isNotEmpty) {
                 setState(() {
-                  _eventos.add({'titulo': desc, 'valor': val, 'horas': hrs});
+                  if (isEditando) {
+                    _eventos[indexEditando] = {'titulo': desc, 'valor': val, 'horas': hrs};
+                  } else {
+                    _eventos.add({'titulo': desc, 'valor': val, 'horas': hrs});
+                  }
                 });
                 _salvarDados();
                 Navigator.pop(context);
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            child: const Text('Adicionar', style: TextStyle(color: Color(0xFF2C3E50))),
+            child: Text(isEditando ? 'Atualizar' : 'Adicionar', style: const TextStyle(color: Color(0xFF2C3E50))),
           ),
         ],
       ),
@@ -177,6 +183,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                // Cartão de Resumo no Topo (Corrigido para "DURAÇÃO" sem a palavra viagens)
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -201,7 +208,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                       Container(height: 30, width: 1, color: Colors.black26),
                       Column(
                         children: [
-                          const Text('TEMPO TOTAL / VIAGEM', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                          const Text('DURAÇÃO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
                           const SizedBox(height: 4),
                           Text('${totalHoras.toStringAsFixed(1).replaceFirst('.', ',')} h', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
                         ],
@@ -216,7 +223,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                     children: [
                       Text('Itinerário (Arraste para ordenar)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
                       TextButton.icon(
-                        onPressed: _adicionarEventoModal,
+                        onPressed: () => _abrirModalItem(),
                         icon: const Icon(Icons.add, size: 16),
                         label: const Text('Novo Item'),
                       ),
@@ -241,20 +248,22 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                           },
                           itemBuilder: (context, index) {
                             final evento = _eventos[index];
-                            bool isEven = index % 2 == 0;
+                            bool isEven = index % 2 == 0; // Alterna o zigue-zague
 
                             return Column(
                               key: ValueKey(evento),
                               children: [
                                 Row(
                                   children: [
-                                    if (!isEven) const Expanded(flex: 1, child: SizedBox()),
+                                    // Se for ímpar, empurra para a direita criando o zigue-zague
+                                    if (!isEven) const Expanded(flex: 1, child: SizedBox(width: 20)),
                                     Expanded(
                                       flex: 3,
                                       child: PlanejamentoCardItem(
                                         index: index,
                                         evento: evento,
                                         isDarkMode: widget.isDarkMode,
+                                        onEdit: () => _abrirModalItem(indexEditando: index),
                                         onDelete: () {
                                           setState(() {
                                             _eventos.removeAt(index);
@@ -263,16 +272,17 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                                         },
                                       ),
                                     ),
-                                    if (isEven) const Expanded(flex: 1, child: SizedBox()),
+                                    if (isEven) const Expanded(flex: 1, child: SizedBox(width: 20)),
                                   ],
                                 ),
-                                // Linha conectora do fluxo estilo timeline em zigue-zague
+                                // Linha roxa centralizada e um pouco mais grossa com efeito fluído/curvado estilo cobra
                                 if (index < _eventos.length - 1)
-                                  Container(
-                                    height: 24,
-                                    width: 2,
-                                    margin: const EdgeInsets.symmetric(vertical: 2),
-                                    color: const Color(0xFFD4E6F1),
+                                  SizedBox(
+                                    height: 32,
+                                    child: CustomPaint(
+                                      painter: SnakeCurvePainter(isNextEven: (index + 1) % 2 == 0),
+                                      child: const SizedBox.expand(),
+                                    ),
                                   ),
                               ],
                             );
@@ -283,4 +293,36 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
             ),
     );
   }
+}
+
+// Pintor personalizado para desenhar a linha roxa em curva suave (estilo cobra) ligando os cartões em zigue-zague
+class SnakeCurvePainter extends CustomPainter {
+  final bool isNextEven;
+
+  SnakeCurvePainter({required this.isNextEven});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF9B59B6) // Cor roxa elegante
+      ..strokeWidth = 3.5 // Linha um pouco mais grossa conforme pedido
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    // Inicia no centro superior
+    path.moveTo(size.width / 2, 0);
+    // Cria uma curva suave (bézier) até o próximo ponto central (esquerda ou direita)
+    double targetX = isNextEven ? size.width * 0.35 : size.width * 0.65;
+    path.cubicTo(
+      size.width / 2, size.height * 0.5,
+      targetX, size.height * 0.5,
+      targetX, size.height,
+    );
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
