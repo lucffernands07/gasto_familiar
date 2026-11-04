@@ -1,150 +1,58 @@
 import 'package:flutter/material.dart';
-import '../widgets/planejamento_card_item.dart';
-import '../services/planejamento_service.dart';
 
-class PlanejarScreen extends StatefulWidget {
-  final String familyId;
+class PlanejamentoCardItem extends StatelessWidget {
+  final int index;
+  final Map<String, dynamic> evento;
   final bool isDarkMode;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
-  const PlanejarScreen({
+  const PlanejamentoCardItem({
     super.key,
-    required this.familyId,
+    required this.index,
+    required this.evento,
     required this.isDarkMode,
+    required this.onDelete,
+    required this.onEdit,
   });
 
-  @override
-  State<PlanejarScreen> createState() => _PlanejarScreenState();
-}
-
-class _PlanejarScreenState extends State<PlanejarScreen> {
-  final PlanejamentoService _service = PlanejamentoService();
-  String _tituloPlaneamento = 'Meu Planeamento';
-  final TextEditingController _tituloController = TextEditingController();
-  bool _isLoading = true;
-
-  List _eventos = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _carregarDados();
-  }
-
-  Future<void> _carregarDados() async {
-    try {
-      final doc = await _service.carregarPlaneamento(widget.familyId);
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        setState(() {
-          _tituloPlaneamento = data['titulo'] ?? 'Meu Planeamento';
-          _eventos = List.from(data['eventos'] ?? []);
-          _isLoading = false;
-        });
-      } else {
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
+  // Converte horas decimais (ex: 2.5) para o formato '02:30'
+  String _formatarHoras(dynamic horasDecimais) {
+    double h = 0.0;
+    if (horasDecimais is int) {
+      h = horasDecimais.toDouble();
+    } else if (horasDecimais is double) {
+      h = horasDecimais;
+    } else if (horasDecimais is String) {
+      h = double.tryParse(horasDecimais.replaceAll(',', '.')) ?? 0.0;
     }
+
+    int horas = h.floor();
+    int minutos = ((h - horas) * 60).round();
+    return '${horas.toString().padLeft(2, '0')}:${minutos.toString().padLeft(2, '0')}h';
   }
 
-  Future<void> _salvarDados() async {
-    await _service.salvarPlaneamento(widget.familyId, _tituloPlaneamento, _eventos);
-  }
-
-  void _editarTitulo() {
-    _tituloController.text = _tituloPlaneamento;
+  void _mostrarNota(BuildContext context, String nota) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
-        title: Text('Editar Título', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
-        content: TextField(
-          controller: _tituloController,
-          style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Nome do Planeamento'),
+        backgroundColor: Colors.black87.withOpacity(0.85),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.amberAccent, size: 20),
+            SizedBox(width: 8),
+            Text('Notas / Observações', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          nota,
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                if (_tituloController.text.trim().isNotEmpty) {
-                  _tituloPlaneamento = _tituloController.text.trim();
-                }
-              });
-              _salvarDados();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            child: const Text('Salvar', style: TextStyle(color: Color(0xFF2C3E50))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _abrirModalItem({int? indexEditando}) {
-    final isEditando = indexEditando != null;
-    final eventoAtual = isEditando ? _eventos[indexEditando] : null;
-
-    final tituloController = TextEditingController(text: isEditando ? eventoAtual['titulo'] : '');
-    final valorController = TextEditingController(text: isEditando ? eventoAtual['valor'].toString().replaceFirst('.', ',') : '');
-    final horasController = TextEditingController(text: isEditando ? eventoAtual['horas'].toString().replaceFirst('.', ',') : '');
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
-        title: Text(isEditando ? 'Editar Etapa / Serviço' : 'Adicionar Etapa / Serviço', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: tituloController,
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Descrição (Ex: Buffet, Bolo...)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: valorController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: horasController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Duração (Horas)', border: OutlineInputBorder()),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              final val = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
-              final hrs = double.tryParse(horasController.text.replaceAll(',', '.')) ?? 0.0;
-              final desc = tituloController.text.trim();
-
-              if (desc.isNotEmpty) {
-                setState(() {
-                  if (isEditando) {
-                    _eventos[indexEditando] = {'titulo': desc, 'valor': val, 'horas': hrs};
-                  } else {
-                    _eventos.add({'titulo': desc, 'valor': val, 'horas': hrs});
-                  }
-                });
-                _salvarDados();
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            child: Text(isEditando ? 'Atualizar' : 'Adicionar', style: const TextStyle(color: Color(0xFF2C3E50))),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar', style: TextStyle(color: Colors.amberAccent)),
           ),
         ],
       ),
@@ -153,195 +61,99 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double totalGeral = _eventos.fold(0.0, (sum, item) => sum + (item['valor'] as double));
-    double totalHoras = _eventos.fold(0.0, (sum, item) => sum + (item['horas'] as double));
+    final String nota = evento['nota'] ?? '';
+    final bool temNota = nota.trim().isNotEmpty;
+    final String duracaoFormatada = _formatarHoras(evento['horas']);
+    final double valor = evento['valor'] is double 
+        ? evento['valor'] 
+        : double.tryParse(evento['valor'].toString().replaceAll(',', '.')) ?? 0.0;
 
-    return Scaffold(
-      backgroundColor: widget.isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE),
-      appBar: AppBar(
-        backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
-        elevation: 0,
-        iconTheme: IconThemeData(color: widget.isDarkMode ? Colors.white : Colors.black87),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _tituloPlaneamento,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: widget.isDarkMode ? Colors.white : Colors.black87),
-                overflow: TextOverflow.ellipsis,
+    return Stack(
+      children: [
+        InkWell(
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEFEBE4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20),
-              onPressed: _editarTitulo,
-              tooltip: 'Editar Título',
-            ),
-          ],
-        ),
-      ),
-      // Posiciona o botão circular com degradê no canto inferior esquerdo
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFCBDD), Color(0xFFD4E6F1)], // Degradê de rosa para azul suave
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () => _abrirModalItem(),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.add, color: Color(0xFF2C3E50), size: 28),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+            child: Row(
               children: [
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        children: [
-                          const Text('TOTAL PREVISTO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                          const SizedBox(height: 4),
-                          Text('R\$ ${totalGeral.toStringAsFixed(2).replaceFirst('.', ',')}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
-                        ],
+                      Text(
+                        '${index + 1}. ${evento['titulo']}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? const Color(0xFF2C3E50) : const Color(0xFF333333),
+                        ),
                       ),
-                      Container(height: 30, width: 1, color: Colors.black26),
-                      Column(
-                        children: [
-                          const Text('DURAÇÃO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                          const SizedBox(height: 4),
-                          Text('${totalHoras.toStringAsFixed(1).replaceFirst('.', ',')} h', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
-                        ],
+                      const SizedBox(height: 6),
+                      Text(
+                        'R\$ ${valor.toStringAsFixed(2).replaceFirst('.', ',')} • $duracaoFormatada',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? const Color(0xFF444444) : const Color(0xFF555555),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                // Título centralizado das etapas
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Center(
-                    child: Text(
-                      'Etapas do Planeamento',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: widget.isDarkMode ? Colors.white : const Color(0xFF333333),
-                      ),
-                    ),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF2C3E50)),
+                  onPressed: onEdit,
+                  tooltip: 'Editar Item',
                 ),
-                Expanded(
-                  child: _eventos.isEmpty
-                      ? Center(child: Text('Nenhum evento planeado.', style: TextStyle(color: widget.isDarkMode ? Colors.white60 : Colors.black54)))
-                      : ReorderableListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          itemCount: _eventos.length,
-                          onReorder: (oldIndex, newIndex) {
-                            setState(() {
-                              if (oldIndex < newIndex) {
-                                newIndex -= 1;
-                              }
-                              final item = _eventos.removeAt(oldIndex);
-                              _eventos.insert(newIndex, item);
-                            });
-                            _salvarDados();
-                          },
-                          itemBuilder: (context, index) {
-                            final evento = _eventos[index];
-                            bool isEven = index % 2 == 0;
-
-                            return Column(
-                              key: ValueKey(evento),
-                              children: [
-                                Row(
-                                  children: [
-                                    if (!isEven) const Expanded(flex: 1, child: SizedBox(width: 20)),
-                                    Expanded(
-                                      flex: 3,
-                                      child: PlanejamentoCardItem(
-                                        index: index,
-                                        evento: evento,
-                                        isDarkMode: widget.isDarkMode,
-                                        onEdit: () => _abrirModalItem(indexEditando: index),
-                                        onDelete: () {
-                                          setState(() {
-                                            _eventos.removeAt(index);
-                                          });
-                                          _salvarDados();
-                                        },
-                                      ),
-                                    ),
-                                    if (isEven) const Expanded(flex: 1, child: SizedBox(width: 20)),
-                                  ],
-                                ),
-                                if (index < _eventos.length - 1)
-                                  SizedBox(
-                                    height: 32,
-                                    child: CustomPaint(
-                                      painter: SnakeCurvePainter(isNextEven: (index + 1) % 2 == 0),
-                                      child: const SizedBox.expand(),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                  onPressed: onDelete,
+                  tooltip: 'Excluir Item',
                 ),
+                const Icon(Icons.drag_handle, size: 20, color: Colors.black54),
               ],
             ),
+          ),
+        ),
+        // Indicador de Nota (Círculo amarelo com exclamação preta) no canto superior direito
+        if (temNota)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () => _mostrarNota(context, nota),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.amber,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.priority_high_rounded,
+                  size: 14,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
-}
-
-class SnakeCurvePainter extends CustomPainter {
-  final bool isNextEven;
-
-  SnakeCurvePainter({required this.isNextEven});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF9B59B6)
-      ..strokeWidth = 3.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-    path.moveTo(size.width / 2, 0);
-    double targetX = isNextEven ? size.width * 0.35 : size.width * 0.65;
-    path.cubicTo(
-      size.width / 2, size.height * 0.5,
-      targetX, size.height * 0.5,
-      targetX, size.height,
-    );
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
