@@ -22,7 +22,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
   final TextEditingController _tituloController = TextEditingController();
 
   // Lista tipada corretamente para evitar erros de compilação no Web
-  final List> _eventos = [
+  final List _eventos = [
     {'titulo': 'Hotel / Hospedagem', 'valor': 450.0, 'horas': 2.0},
     {'titulo': 'Ingressos Parque', 'valor': 240.0, 'horas': 5.0},
     {'titulo': 'Combustível / Pedágios (Ida e Volta)', 'valor': 180.0, 'horas': 3.5},
