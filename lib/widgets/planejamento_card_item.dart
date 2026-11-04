@@ -57,7 +57,7 @@ class PlanejamentoCardItem extends StatelessWidget {
   }
 
   void _mostrarNota(BuildContext context) {
-    List> notasList = _obterListaNotas();
+    List notasList = _obterListaNotas();
 
     showDialog(
       context: context,
