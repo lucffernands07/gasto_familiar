@@ -16,15 +16,15 @@ class PlanejamentoCardItem extends StatelessWidget {
     required this.onEdit,
   });
 
-  // Converte horas decimais (ex: 2.5) para o formato '02:30'
-  String _formatarHoras(dynamic horasDecimais) {
+  // Converte qualquer formato de horas (decimal, string com vírgula ou int) para o formato '08:00h'
+  String _formatarHoras(dynamic horasInput) {
     double h = 0.0;
-    if (horasDecimais is int) {
-      h = horasDecimais.toDouble();
-    } else if (horasDecimais is double) {
-      h = horasDecimais;
-    } else if (horasDecimais is String) {
-      h = double.tryParse(horasDecimais.replaceAll(',', '.')) ?? 0.0;
+    if (horasInput is int) {
+      h = horasInput.toDouble();
+    } else if (horasInput is double) {
+      h = horasInput;
+    } else if (horasInput is String) {
+      h = double.tryParse(horasInput.replaceAll(',', '.').replaceAll('h', '').trim()) ?? 0.0;
     }
 
     int horas = h.floor();
@@ -64,9 +64,13 @@ class PlanejamentoCardItem extends StatelessWidget {
     final String nota = evento['nota'] ?? '';
     final bool temNota = nota.trim().isNotEmpty;
     final String duracaoFormatada = _formatarHoras(evento['horas']);
-    final double valor = evento['valor'] is double 
-        ? evento['valor'] 
-        : double.tryParse(evento['valor'].toString().replaceAll(',', '.')) ?? 0.0;
+    
+    final dynamic valorRaw = evento['valor'];
+    final double valor = valorRaw is double 
+        ? valorRaw 
+        : (valorRaw is int 
+            ? valorRaw.toDouble() 
+            : double.tryParse(valorRaw.toString().replaceAll(',', '.')) ?? 0.0);
 
     return Stack(
       children: [
