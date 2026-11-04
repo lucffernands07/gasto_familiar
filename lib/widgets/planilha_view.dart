@@ -88,7 +88,7 @@ class PlanilhaView extends StatelessWidget {
           'descricao': data['descricao'] ?? '',
           'valor': data['valor'] ?? 0.0,
           'tipo': data['tipo'] ?? 'despesa',
-          'status': 'Pendente', // Forçado estritamente para Pendente conforme pedido
+          'status': 'Pendente',
           'createdAt': Timestamp.fromDate(novaData),
         });
       }
@@ -184,6 +184,63 @@ class PlanilhaView extends StatelessWidget {
     );
   }
 
+  // Widget auxiliar para reutilizar o card de "Nenhum registo" com o botão em degradê
+  Widget _buildCardVazio(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFDF8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEFEBE4)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFF888888)),
+          const SizedBox(height: 12),
+          const Text('Nenhuma transação neste mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+          const SizedBox(height: 6),
+          const Text('Altere o mês no topo ou clique em "+ Lançar".', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+          const SizedBox(height: 20),
+          const Divider(color: Color(0xFFEFEBE4)),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () => _copiarTransacoesMesAnterior(context),
+              icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF333333)),
+              label: const Text(
+                'Copiar transações do mês anterior',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final FirebaseFirestore db = FirebaseFirestore.instance;
@@ -204,38 +261,7 @@ class PlanilhaView extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFDF8),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFEFEBE4)),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.table_chart_outlined, size: 48, color: Color(0xFF888888)),
-                const SizedBox(height: 12),
-                const Text('Nenhuma transação lançada', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                const SizedBox(height: 6),
-                const Text('Clique em "+ Lançar" para adicionar receitas ou despesas.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
-                const SizedBox(height: 20),
-                const Divider(color: Color(0xFFEFEBE4)),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _copiarTransacoesMesAnterior(context),
-                  icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF2C3E50)),
-                  label: const Text('Copiar transações do mês anterior', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4E6F1),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
-              ],
-            ),
-          );
+          return _buildCardVazio(context);
         }
 
         final Map<String, List> tabelasPorCategoria = {};
@@ -267,38 +293,7 @@ class PlanilhaView extends StatelessWidget {
         }
 
         if (tabelasPorCategoria.isEmpty) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFDF8),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFEFEBE4)),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFF888888)),
-                const SizedBox(height: 12),
-                const Text('Nenhuma transação neste mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-                const SizedBox(height: 6),
-                const Text('Altere o mês no topo ou clique em "+ Lançar".', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
-                const SizedBox(height: 20),
-                const Divider(color: Color(0xFFEFEBE4)),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _copiarTransacoesMesAnterior(context),
-                  icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF2C3E50)),
-                  label: const Text('Copiar transações do mês anterior', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4E6F1),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
-              ],
-            ),
-          );
+          return _buildCardVazio(context);
         }
 
         final sortedKeys = tabelasPorCategoria.keys.toList()
