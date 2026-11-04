@@ -6,6 +6,7 @@ class PlanejamentoCardItem extends StatelessWidget {
   final bool isDarkMode;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final Function(List> novasNotas)? onUpdateNotas;
 
   const PlanejamentoCardItem({
     super.key,
@@ -14,9 +15,9 @@ class PlanejamentoCardItem extends StatelessWidget {
     required this.isDarkMode,
     required this.onDelete,
     required this.onEdit,
+    this.onUpdateNotas,
   });
 
-  // Converte qualquer formato de horas (decimal, string com vírgula ou int) para o formato '08:00h'
   String _formatarHoras(dynamic horasInput) {
     double h = 0.0;
     if (horasInput is int) {
@@ -32,77 +33,155 @@ class PlanejamentoCardItem extends StatelessWidget {
     return '${horas.toString().padLeft(2, '0')}:${minutos.toString().padLeft(2, '0')}h';
   }
 
-  void _mostrarNota(BuildContext context, String nota) {
+  // Converte a string antiga ou lista de mapas de notas para uma lista padronizada com { 'texto': String, 'checked': bool }
+  List> _obterListaNotas() {
+    final rawNota = evento['nota'];
+    if (rawNota is List) {
+      return rawNota.map((item) {
+        if (item is Map) {
+          return {
+            'texto': item['texto']?.toString() ?? '',
+            'checked': item['checked'] == true,
+          };
+        }
+        return {'texto': item.toString(), 'checked': false};
+      }).toList();
+    } else if (rawNota is String && rawNota.trim().isNotEmpty) {
+      // Se era texto puro antigo, separa por quebras de linha
+      return rawNota.split('\n').where((s) => s.trim().isNotEmpty).map((s) {
+        String limpo = s.replaceAll(RegExp(r'^[-*•]\s*'), '').trim();
+        return {'texto': limpo, 'checked': false};
+      }).toList();
+    }
+    return [];
+  }
+
+  void _mostrarNota(BuildContext context) {
+    List> notasList = _obterListaNotas();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.transparent,
-        contentPadding: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFF3E0), Color(0xFFFAF6EE)], // Degradê suave de amarelo claro para branco/bege da app
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          backgroundColor: Colors.transparent,
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Container(
+            width: MediaQuery.of(context).size.width * 0.85,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFF3E0), Color(0xFFFAF6EE)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.info_outline, color: Color(0xFFD4AC0D), size: 22),
-                  SizedBox(width: 8),
-                  Text(
-                    'Notas / Observações',
-                    style: TextStyle(
-                      color: Color(0xFF2C3E50),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.info_outline, color: Color(0xFFD4AC0D), size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Notas / Observações',
+                      style: TextStyle(
+                        color: Color(0xFF2C3E50),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (notasList.isEmpty)
+                  const Text('Nenhuma nota registada.', style: TextStyle(color: Colors.black54, fontSize: 14))
+                else
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: notasList.length,
+                      itemBuilder: (context, idx) {
+                        final notaItem = notasList[idx];
+                        bool isChecked = notaItem['checked'] == true;
+                        return CheckboxListTile(
+                          value: isChecked,
+                          activeColor: const Color(0xFFD4AC0D),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          title: Text(
+                            notaItem['texto'],
+                            style: TextStyle(
+                              color: isChecked ? Colors.grey : const Color(0xFF333333),
+                              fontSize: 14,
+                              decoration: isChecked ? TextDecoration.lineThrough : TextDecoration.none,
+                            ),
+                          ),
+                          onChanged: (bool? val) {
+                            setStateDialog(() {
+                              notasList[idx]['checked'] = val ?? false;
+                            });
+                            if (onUpdateNotas != null) {
+                              onUpdateNotas!(notasList);
+                            }
+                          },
+                        );
+                      },
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                nota,
-                style: const TextStyle(
-                  color: Color(0xFF333333),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFCBDD), // Rosa suave do tema
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                  child: const Text(
-                    'Fechar',
-                    style: TextStyle(
-                      color: Color(0xFF2C3E50),
-                      fontWeight: FontWeight.bold,
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onEdit(); // Abre o modal completo de edição da etapa
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4E6F1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: const Text(
+                        'Editar',
+                        style: TextStyle(
+                          color: Color(0xFF2C3E50),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFCBDD),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: const Text(
+                        'Fechar',
+                        style: TextStyle(
+                          color: Color(0xFF2C3E50),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -111,8 +190,8 @@ class PlanejamentoCardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String nota = evento['nota'] ?? '';
-    final bool temNota = nota.trim().isNotEmpty;
+    final notasList = _obterListaNotas();
+    final bool temNota = notasList.isNotEmpty;
     final String duracaoFormatada = _formatarHoras(evento['horas']);
     
     final dynamic valorRaw = evento['valor'];
@@ -131,7 +210,7 @@ class PlanejamentoCardItem extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+                colors: [Color(0xFFFFCBDD], Color(0xFFFFF3E0)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -186,13 +265,12 @@ class PlanejamentoCardItem extends StatelessWidget {
             ),
           ),
         ),
-        // Indicador de Nota (Círculo amarelo com exclamação preta) no canto superior direito
         if (temNota)
           Positioned(
             top: 8,
             right: 8,
             child: GestureDetector(
-              onTap: () => _mostrarNota(context, nota),
+              onTap: () => _mostrarNota(context),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
@@ -210,4 +288,5 @@ class PlanejamentoCardItem extends StatelessWidget {
       ],
     );
   }
-}
+              }
+              
