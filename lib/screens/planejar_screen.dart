@@ -18,15 +18,40 @@ class PlanejarScreen extends StatefulWidget {
 
 class _PlanejarScreenState extends State<PlanejarScreen> {
   final PlanejamentoService _service = PlanejamentoService();
-  String _tituloPlaneamento = 'Passeio Thermas São Pedro';
+  String _tituloPlaneamento = 'Meu Planeamento de Viagem';
   final TextEditingController _tituloController = TextEditingController();
+  bool _isLoading = true;
 
-  // Lista tipada corretamente para evitar erros de compilação no Web
-  final List _eventos = [
-    {'titulo': 'Hotel / Hospedagem', 'valor': 450.0, 'horas': 2.0},
-    {'titulo': 'Ingressos Parque', 'valor': 240.0, 'horas': 5.0},
-    {'titulo': 'Combustível / Pedágios (Ida e Volta)', 'valor': 180.0, 'horas': 3.5},
-  ];
+  // Começa totalmente vazio conforme solicitado
+  List _eventos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarDados();
+  }
+
+  Future<void> _carregarDados() async {
+    try {
+      final doc = await _service.carregarPlaneamento(widget.familyId);
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        setState(() {
+          _tituloPlaneamento = data['titulo'] ?? 'Meu Planeamento de Viagem';
+          _eventos = List.from(data['eventos'] ?? []);
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _salvarDados() async {
+    await _service.salvarPlaneamento(widget.familyId, _tituloPlaneamento, _eventos);
+  }
 
   void _editarTitulo() {
     _tituloController.text = _tituloPlaneamento;
@@ -49,6 +74,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                   _tituloPlaneamento = _tituloController.text.trim();
                 }
               });
+              _salvarDados();
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
@@ -107,6 +133,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                 setState(() {
                   _eventos.add({'titulo': desc, 'valor': val, 'horas': hrs});
                 });
+                _salvarDados();
                 Navigator.pop(context);
               }
             },
@@ -146,101 +173,114 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                Column(
-                  children: [
-                    const Text('TOTAL PREVISTO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                    const SizedBox(height: 4),
-                    Text('R\$ ${totalGeral.toStringAsFixed(2).replaceFirst('.', ',')}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
-                  ],
-                ),
-                Container(height: 30, width: 1, color: Colors.black26),
-                Column(
-                  children: [
-                    const Text('TEMPO TOTAL / VIAGEM', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
-                    const SizedBox(height: 4),
-                    Text('${totalHoras.toStringAsFixed(1).replaceFirst('.', ',')} h', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Itinerário (Arraste para ordenar)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-                TextButton.icon(
-                  onPressed: _adicionarEventoModal,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Novo Item'),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _eventos.isEmpty
-                ? Center(child: Text('Nenhum evento planeado.', style: TextStyle(color: widget.isDarkMode ? Colors.white60 : Colors.black54)))
-                : ReorderableListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: _eventos.length,
-                    onReorder: (oldIndex, newIndex) {
-                      setState(() {
-                        if (oldIndex < newIndex) {
-                          newIndex -= 1;
-                        }
-                        final item = _eventos.removeAt(oldIndex);
-                        _eventos.insert(newIndex, item);
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final evento = _eventos[index];
-                      bool isEven = index % 2 == 0;
-
-                      return Container(
-                        key: ValueKey(evento),
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            if (!isEven) const Expanded(flex: 1, child: SizedBox()),
-                            Expanded(
-                              flex: 3,
-                              child: PlanejamentoCardItem(
-                                index: index,
-                                evento: evento,
-                                isDarkMode: widget.isDarkMode,
-                                onDelete: () {
-                                  setState(() {
-                                    _eventos.removeAt(index);
-                                  });
-                                },
-                              ),
-                            ),
-                            if (isEven) const Expanded(flex: 1, child: SizedBox()),
-                          ],
-                        ),
-                      );
-                    },
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-          ),
-        ],
-      ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          const Text('TOTAL PREVISTO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                          const SizedBox(height: 4),
+                          Text('R\$ ${totalGeral.toStringAsFixed(2).replaceFirst('.', ',')}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
+                        ],
+                      ),
+                      Container(height: 30, width: 1, color: Colors.black26),
+                      Column(
+                        children: [
+                          const Text('TEMPO TOTAL / VIAGEM', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF555555))),
+                          const SizedBox(height: 4),
+                          Text('${totalHoras.toStringAsFixed(1).replaceFirst('.', ',')} h', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF2C3E50))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Itinerário (Arraste para ordenar)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
+                      TextButton.icon(
+                        onPressed: _adicionarEventoModal,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Novo Item'),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _eventos.isEmpty
+                      ? Center(child: Text('Nenhum evento planeado.', style: TextStyle(color: widget.isDarkMode ? Colors.white60 : Colors.black54)))
+                      : ReorderableListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: _eventos.length,
+                          onReorder: (oldIndex, newIndex) {
+                            setState(() {
+                              if (oldIndex < newIndex) {
+                                newIndex -= 1;
+                              }
+                              final item = _eventos.removeAt(oldIndex);
+                              _eventos.insert(newIndex, item);
+                            });
+                            _salvarDados();
+                          },
+                          itemBuilder: (context, index) {
+                            final evento = _eventos[index];
+                            bool isEven = index % 2 == 0;
+
+                            return Column(
+                              key: ValueKey(evento),
+                              children: [
+                                Row(
+                                  children: [
+                                    if (!isEven) const Expanded(flex: 1, child: SizedBox()),
+                                    Expanded(
+                                      flex: 3,
+                                      child: PlanejamentoCardItem(
+                                        index: index,
+                                        evento: evento,
+                                        isDarkMode: widget.isDarkMode,
+                                        onDelete: () {
+                                          setState(() {
+                                            _eventos.removeAt(index);
+                                          });
+                                          _salvarDados();
+                                        },
+                                      ),
+                                    ),
+                                    if (isEven) const Expanded(flex: 1, child: SizedBox()),
+                                  ],
+                                ),
+                                // Linha conectora do fluxo estilo timeline em zigue-zague
+                                if (index < _eventos.length - 1)
+                                  Container(
+                                    height: 24,
+                                    width: 2,
+                                    margin: const EdgeInsets.symmetric(vertical: 2),
+                                    color: const Color(0xFFD4E6F1),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
     );
   }
 }
