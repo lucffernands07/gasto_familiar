@@ -305,7 +305,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Center(
                     child: Text(
-                      'Etapas do Planeamento',
+                      'Etapas do Planejamento',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
