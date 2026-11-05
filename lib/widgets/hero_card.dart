@@ -10,6 +10,7 @@ class HeroCard extends StatefulWidget {
   final VoidCallback? onTapSaldoFamilia;
   final VoidCallback? onTapReceitas;
   final VoidCallback? onTapGastos;
+  final VoidCallback? onTapDespesasPendentes; // Opcional para clique
 
   const HeroCard({
     super.key,
@@ -19,6 +20,7 @@ class HeroCard extends StatefulWidget {
     this.onTapSaldoFamilia,
     this.onTapReceitas,
     this.onTapGastos,
+    this.onTapDespesasPendentes,
   });
 
   @override
@@ -89,6 +91,7 @@ class _HeroCardState extends State<HeroCard> {
             double gastosEfetivos = 0.0;
             double receitasPrevias = 0.0;
             double gastosPrevios = 0.0;
+            double despesasPendentes = 0.0; // Soma das despesas com status Pendente
 
             if (txSnapshot.hasData) {
               for (var doc in txSnapshot.data!.docs) {
@@ -117,12 +120,13 @@ class _HeroCardState extends State<HeroCard> {
                   gastosPrevios += amount;
                   if (status == 'Pago') {
                     gastosEfetivos += amount;
+                  } else if (status == 'Pendente') {
+                    despesasPendentes += amount; // Soma exclusiva das despesas pendentes
                   }
                 }
               }
             }
 
-            // AJUSTE 1: O Saldo Família não entra no cálculo do saldo total nem do previsto
             final saldoTotal = receitasEfetivas - gastosEfetivos;
             final saldoPrevio = receitasPrevias - gastosPrevios;
 
@@ -244,7 +248,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Gastos
+                  // Cartão Gastos (Pagos)
                   GestureDetector(
                     onTap: widget.onTapGastos,
                     child: _buildItemCard(
@@ -253,6 +257,18 @@ class _HeroCardState extends State<HeroCard> {
                       const Color(0xFFFF8B94),
                       Icons.arrow_downward_rounded,
                       subTextoPrevisto: widget.mostrarSaldo ? '(Previsto: R\$ ${gastosPrevios.toStringAsFixed(2).replaceFirst('.', ',')})' : '(Previsto: R\$ ••••••)',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // NOVO CARTÃO: Despesas (A pagar) - Soma das despesas pendentes
+                  GestureDetector(
+                    onTap: widget.onTapDespesasPendentes,
+                    child: _buildItemCard(
+                      'Despesas (A pagar)',
+                      widget.mostrarSaldo ? 'R\$ ${despesasPendentes.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      Colors.orange.shade400,
+                      Icons.schedule_rounded,
                     ),
                   ),
                 ],
