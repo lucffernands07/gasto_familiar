@@ -76,7 +76,8 @@ class PlanejamentoCardItem extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1.5),
+              // Borda alterada para cinza suave
+              border: Border.all(color: Colors.grey.withOpacity(0.4), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.12),
@@ -91,7 +92,8 @@ class PlanejamentoCardItem extends StatelessWidget {
               children: [
                 Row(
                   children: const [
-                    Icon(Icons.info_outline, color: Color(0xFFD4AC0D), size: 22),
+                    // Ícone alterado para cinza/chumbo
+                    Icon(Icons.info_outline, color: Color(0xFF555555), size: 22),
                     SizedBox(width: 8),
                     Text(
                       'Notas / Observações',
@@ -117,7 +119,9 @@ class PlanejamentoCardItem extends StatelessWidget {
                         bool isChecked = notaItem['checked'] == true;
                         return CheckboxListTile(
                           value: isChecked,
-                          activeColor: const Color(0xFFD4AC0D),
+                          // Cor da checkbox ativa alterada para cinza/chumbo
+                          activeColor: const Color(0xFF555555),
+                          checkColor: Colors.white,
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
                           dense: true,
@@ -288,5 +292,4 @@ class PlanejamentoCardItem extends StatelessWidget {
       ],
     );
   }
-              }
-              
+}
