@@ -320,7 +320,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                       ? Center(child: Text('Nenhum evento planeado.', style: TextStyle(color: widget.isDarkMode ? Colors.white60 : Colors.black54)))
                       : ReorderableListView.builder(
                           // Espaçamento inferior de 120 pixels para criar o "rodapé invisível" e evitar sobreposição com o botão +
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
                           itemCount: _eventos.length,
                           onReorder: (oldIndex, newIndex) {
                             setState(() {
