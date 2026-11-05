@@ -18,7 +18,7 @@ class PlanejarScreen extends StatefulWidget {
 
 class _PlanejarScreenState extends State<PlanejarScreen> {
   final PlanejamentoService _service = PlanejamentoService();
-  String _tituloPlaneamento = 'Meu Planeamento';
+  String _tituloPlaneamento = 'Meu Planejamento';
   final TextEditingController _tituloController = TextEditingController();
   bool _isLoading = true;
 
@@ -36,7 +36,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         setState(() {
-          _tituloPlaneamento = data['titulo'] ?? 'Meu Planeamento';
+          _tituloPlaneamento = data['titulo'] ?? 'Meu Planejamento';
           _eventos = List.from(data['eventos'] ?? []);
           _isLoading = false;
         });
@@ -68,7 +68,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
         content: TextField(
           controller: _tituloController,
           style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Nome do Planeamento'),
+          decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Nome do Planejamento'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
@@ -241,7 +241,8 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ],
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // Botão centralizado no rodapé
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -318,7 +319,8 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                   child: _eventos.isEmpty
                       ? Center(child: Text('Nenhum evento planeado.', style: TextStyle(color: widget.isDarkMode ? Colors.white60 : Colors.black54)))
                       : ReorderableListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          // Espaçamento inferior de 120 pixels para criar o "rodapé invisível" e evitar sobreposição com o botão +
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                           itemCount: _eventos.length,
                           onReorder: (oldIndex, newIndex) {
                             setState(() {
