@@ -464,4 +464,9 @@ class PlanilhaView extends StatelessWidget {
                 ],
               ),
             );
-          }).toList()
+          }).toList(), 
+        );
+      },
+    );
+  }
+}
