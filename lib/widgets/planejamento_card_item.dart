@@ -33,7 +33,6 @@ class PlanejamentoCardItem extends StatelessWidget {
     return '${horas.toString().padLeft(2, '0')}:${minutos.toString().padLeft(2, '0')}h';
   }
 
-  // Converte a string antiga ou lista de mapas de notas para uma lista padronizada com { 'texto': String, 'checked': bool }
   List _obterListaNotas() {
     final rawNota = evento['nota'];
     if (rawNota is List) {
@@ -47,7 +46,6 @@ class PlanejamentoCardItem extends StatelessWidget {
         return {'texto': item.toString(), 'checked': false};
       }).toList();
     } else if (rawNota is String && rawNota.trim().isNotEmpty) {
-      // Se era texto puro antigo, separa por quebras de linha
       return rawNota.split('\n').where((s) => s.trim().isNotEmpty).map((s) {
         String limpo = s.replaceAll(RegExp(r'^[-*•]\s*'), '').trim();
         return {'texto': limpo, 'checked': false};
@@ -76,7 +74,6 @@ class PlanejamentoCardItem extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              // Borda alterada para cinza suave
               border: Border.all(color: Colors.grey.withOpacity(0.4), width: 1.5),
               boxShadow: [
                 BoxShadow(
@@ -92,7 +89,6 @@ class PlanejamentoCardItem extends StatelessWidget {
               children: [
                 Row(
                   children: const [
-                    // Ícone alterado para cinza/chumbo
                     Icon(Icons.info_outline, color: Color(0xFF555555), size: 22),
                     SizedBox(width: 8),
                     Text(
@@ -119,7 +115,6 @@ class PlanejamentoCardItem extends StatelessWidget {
                         bool isChecked = notaItem['checked'] == true;
                         return CheckboxListTile(
                           value: isChecked,
-                          // Cor da checkbox ativa alterada para cinza/chumbo
                           activeColor: const Color(0xFF555555),
                           checkColor: Colors.white,
                           controlAffinity: ListTileControlAffinity.leading,
@@ -152,7 +147,7 @@ class PlanejamentoCardItem extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        onEdit(); // Abre o modal completo de edição da etapa
+                        onEdit();
                       },
                       style: TextButton.styleFrom(
                         backgroundColor: const Color(0xFFD4E6F1),
@@ -205,6 +200,20 @@ class PlanejamentoCardItem extends StatelessWidget {
             ? valorRaw.toDouble() 
             : double.tryParse(valorRaw.toString().replaceAll(',', '.')) ?? 0.0);
 
+    // Recupera o status (padrão Pendente se não houver)
+    final String status = evento['status'] ?? 'Pendente';
+    
+    // Cores e estilo baseados no status
+    Color statusBgColor;
+    Color statusTextColor;
+    if (status == 'Pago' || status == 'Concluído') {
+      statusBgColor = Colors.green.shade100;
+      statusTextColor = Colors.green.shade800;
+    } else {
+      statusBgColor = Colors.red.shade100;
+      statusTextColor = Colors.red.shade800;
+    }
+
     return Stack(
       children: [
         InkWell(
@@ -249,6 +258,23 @@ class PlanejamentoCardItem extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: isDarkMode ? const Color(0xFF444444) : const Color(0xFF555555),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Etiqueta de Status arredondada abaixo do valor e horas
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusBgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: statusTextColor,
+                          ),
                         ),
                       ),
                     ],
