@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'calculadora_dialog.dart';
 
 class PlanilhaView extends StatelessWidget {
   final String familyId;
@@ -112,9 +113,10 @@ class PlanilhaView extends StatelessWidget {
   void _mostrarDialogEditarTransacao(BuildContext context, String transId, Map<String, dynamic> dadosAtuais) {
     final db = FirebaseFirestore.instance;
     final descController = TextEditingController(text: dadosAtuais['descricao'] ?? '');
-    final valorController = TextEditingController(text: (dadosAtuais['valor'] ?? 0.0).toString());
+    final valorController = TextEditingController(text: (dadosAtuais['valor'] ?? 0.0).toString().replaceFirst('.', ','));
     final catController = TextEditingController(text: dadosAtuais['categoria'] ?? 'Geral');
     String statusAtual = dadosAtuais['status'] ?? 'Recebido';
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -122,7 +124,18 @@ class PlanilhaView extends StatelessWidget {
         builder: (context, setStateDialog) => AlertDialog(
           backgroundColor: const Color(0xFFFAF6EE),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Editar Transação', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Editar Transação', style: TextStyle(fontWeight: FontWeight.bold)),
+              // Calculadora no canto superior direito para Editar Transação
+              IconButton(
+                icon: const Icon(Icons.calculate_outlined, color: Color(0xFF333333), size: 22),
+                tooltip: 'Calculadora',
+                onPressed: () => CalculadoraDialog.mostrar(context, valorController, isDarkMode),
+              ),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -184,7 +197,6 @@ class PlanilhaView extends StatelessWidget {
     );
   }
 
-  // Widget auxiliar para reutilizar o card de "Nenhum registo" com o botão em degradê
   Widget _buildCardVazio(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -452,9 +464,4 @@ class PlanilhaView extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(),
-        );         
-      },
-    );
-  }
-}
+          }).toList()
