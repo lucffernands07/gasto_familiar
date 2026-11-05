@@ -210,7 +210,7 @@ class PlanejamentoCardItem extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFFFCBDD)], Color(0xFFFFF3E0)],
+                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
