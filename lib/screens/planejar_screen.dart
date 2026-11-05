@@ -98,7 +98,9 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
     final valorController = TextEditingController(text: isEditando ? eventoAtual['valor'].toString().replaceFirst('.', ',') : '');
     final horasController = TextEditingController(text: isEditando ? eventoAtual['horas'].toString().replaceFirst('.', ',') : '');
     
-    // Formata as notas para texto separado por linhas no campo de edição
+    // Status inicial (Padrão: Pendente)
+    String statusSelecionado = isEditando ? (eventoAtual['status'] ?? 'Pendente') : 'Pendente';
+
     String notasTextoInicial = '';
     if (isEditando && eventoAtual['nota'] != null) {
       if (eventoAtual['nota'] is List) {
@@ -113,102 +115,130 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
-        title: Text(isEditando ? 'Editar Etapa / Serviço' : 'Adicionar Etapa / Serviço', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: tituloController,
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Descrição (Ex: Buffet, Bolo...)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: valorController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: horasController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(labelText: 'Duração (Horas)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notaController,
-                maxLines: 4,
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(
-                  labelText: 'Notas / Observações (uma por linha)',
-                  border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
+          title: Text(isEditando ? 'Editar Etapa / Serviço' : 'Adicionar Etapa / Serviço', style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: tituloController,
+                  style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
+                  decoration: const InputDecoration(labelText: 'Descrição (Ex: Buffet, Bolo...)', border: OutlineInputBorder()),
                 ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () {
-              final val = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
-              final hrs = double.tryParse(horasController.text.replaceAll(',', '.')) ?? 0.0;
-              final desc = tituloController.text.trim();
-              
-              final linhasNotas = notaController.text
-                  .split('\n')
-                  .where((s) => s.trim().isNotEmpty)
-                  .map((s) => {'texto': s.trim(), 'checked': false})
-                  .toList();
-
-              if (desc.isNotEmpty) {
-                setState(() {
-                  if (isEditando) {
-                    final notasAntigas = _eventos[indexEditando]['nota'];
-                    List notasfinais = [];
-                    if (notasAntigas is List) {
-                      notasfinais = linhasNotas.map((nova) {
-                        final existente = (notasAntigas as List).firstWhere(
-                          (antiga) => antiga is Map && antiga['texto'] == nova['texto'],
-                          orElse: () => null,
-                        );
-                        return {
-                          'texto': nova['texto'],
-                          'checked': existente != null && existente['checked'] == true,
-                        };
-                      }).toList();
-                    } else {
-                      notasfinais = linhasNotas;
+                const SizedBox(height: 12),
+                TextField(
+                  controller: valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
+                  decoration: const InputDecoration(labelText: 'Valor (R\$)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: horasController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
+                  decoration: const InputDecoration(labelText: 'Duração (Horas)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notaController,
+                  maxLines: 4,
+                  style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
+                  decoration: const InputDecoration(
+                    labelText: 'Notas / Observações (uma por linha)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Campo de Status abaixo de notas
+                DropdownButtonFormField<String>(
+                  value: statusSelecionado,
+                  dropdownColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
+                  style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['Pendente', 'Pago', 'Concluído'].map((String status) {
+                    return DropdownMenuItem<String>(
+                      value: status,
+                      child: Text(status),
+                    );
+                  }).toList(),
+                  onChanged: (String? novoValor) {
+                    if (novoValor != null) {
+                      setStateDialog(() {
+                        statusSelecionado = novoValor;
+                      });
                     }
-
-                    _eventos[indexEditando] = {
-                      'titulo': desc,
-                      'valor': val,
-                      'horas': hrs,
-                      'nota': notasfinais,
-                    };
-                  } else {
-                    _eventos.add({
-                      'titulo': desc,
-                      'valor': val,
-                      'horas': hrs,
-                      'nota': linhasNotas,
-                    });
-                  }
-                });
-                _salvarDados();
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            child: Text(isEditando ? 'Atualizar' : 'Adicionar', style: const TextStyle(color: Color(0xFF2C3E50))),
+                  },
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () {
+                final val = double.tryParse(valorController.text.replaceAll(',', '.')) ?? 0.0;
+                final hrs = double.tryParse(horasController.text.replaceAll(',', '.')) ?? 0.0;
+                final desc = tituloController.text.trim();
+                
+                final linhasNotas = notaController.text
+                    .split('\n')
+                    .where((s) => s.trim().isNotEmpty)
+                    .map((s) => {'texto': s.trim(), 'checked': false})
+                    .toList();
+
+                if (desc.isNotEmpty) {
+                  setState(() {
+                    if (isEditando) {
+                      final notasAntigas = _eventos[indexEditando]['nota'];
+                      List notasfinais = [];
+                      if (notasAntigas is List) {
+                        notasfinais = linhasNotas.map((nova) {
+                          final existente = (notasAntigas as List).firstWhere(
+                            (antiga) => antiga is Map && antiga['texto'] == nova['texto'],
+                            orElse: () => null,
+                          );
+                          return {
+                            'texto': nova['texto'],
+                            'checked': existente != null && existente['checked'] == true,
+                          };
+                        }).toList();
+                      } else {
+                        notasfinais = linhasNotas;
+                      }
+
+                      _eventos[indexEditando] = {
+                        'titulo': desc,
+                        'valor': val,
+                        'horas': hrs,
+                        'nota': notasfinais,
+                        'status': statusSelecionado,
+                      };
+                    } else {
+                      _eventos.add({
+                        'titulo': desc,
+                        'valor': val,
+                        'horas': hrs,
+                        'nota': linhasNotas,
+                        'status': statusSelecionado,
+                      });
+                    }
+                  });
+                  _salvarDados();
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
+              child: Text(isEditando ? 'Atualizar' : 'Adicionar', style: const TextStyle(color: Color(0xFF2C3E50))),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -241,7 +271,6 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
           ],
         ),
       ),
-      // Botão centralizado no rodapé
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Container(
         decoration: BoxDecoration(
@@ -319,8 +348,7 @@ class _PlanejarScreenState extends State<PlanejarScreen> {
                   child: _eventos.isEmpty
                       ? Center(child: Text('Nenhum evento planeado.', style: TextStyle(color: widget.isDarkMode ? Colors.white60 : Colors.black54)))
                       : ReorderableListView.builder(
-                          // Espaçamento inferior de 120 pixels para criar o "rodapé invisível" e evitar sobreposição com o botão +
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 180),
                           itemCount: _eventos.length,
                           onReorder: (oldIndex, newIndex) {
                             setState(() {
