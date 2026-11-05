@@ -98330,7 +98330,7 @@ s=A.cF(o,o,B.p,B.oL,o,o,o,30,o,o,o,o,1)
 r=B.d.fW(m)
 q=B.d.aV((m-r)*60)
 j=A.cF(o,A.cV(A.b([i,s,A.cQ(A.b([B.a0T,B.dM,A.at(B.c.dE(B.f.k(r),2,"0")+":"+B.c.dE(B.f.k(q),2,"0")+"h",o,o,o,B.Ci,o,o)],g),B.F,o,B.I,B.M)],g),B.F,B.m7,B.M,0),B.p,o,o,new A.bS(o,o,o,j,o,B.Me,B.a3),o,o,B.ec,B.ec,o,o,o)
-i=A.fC(A.at("Etapas do Planeamento",o,o,o,A.am(o,o,p.a.d?B.i:B.aB,o,o,o,o,o,o,o,o,15,o,o,B.P,o,o,!0,o,o,o,o,o,o,o,o),o,o),o,o)
+i=A.fC(A.at("Etapas do Planejamento",o,o,o,A.am(o,o,p.a.d?B.i:B.aB,o,o,o,o,o,o,o,o,15,o,o,B.P,o,o,!0,o,o,o,o,o,o,o,o),o,o),o,o)
 s=p.w.length
 if(s===0)s=A.fC(A.at("Nenhum evento planeado.",o,o,o,A.am(o,o,p.a.d?B.hJ:B.T,o,o,o,o,o,o,o,o,o,o,o,o,o,o,!0,o,o,o,o,o,o,o,o),o,o),o,o)
 else s=new A.F8(new A.azy(p),s,new A.azz(p),B.i0,o)
