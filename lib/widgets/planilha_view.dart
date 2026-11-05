@@ -128,11 +128,17 @@ class PlanilhaView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Editar Transação', style: TextStyle(fontWeight: FontWeight.bold)),
-              // Calculadora no canto superior direito para Editar Transação
-              IconButton(
-                icon: const Icon(Icons.calculate_outlined, color: Color(0xFF333333), size: 22),
-                tooltip: 'Calculadora',
-                onPressed: () => CalculadoraDialog.mostrar(context, valorController, isDarkMode),
+              // Botão da calculadora com o círculo em rosa padrão no canto superior direito
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFCBDD),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.calculate_outlined, color: Color(0xFF2C3E50), size: 22),
+                  tooltip: 'Calculadora',
+                  onPressed: () => CalculadoraDialog.mostrar(context, valorController, isDarkMode),
+                ),
               ),
             ],
           ),
@@ -464,7 +470,7 @@ class PlanilhaView extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(), 
+          }).toList(),
         );
       },
     );
