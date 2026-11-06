@@ -59,6 +59,30 @@ class FamilyService {
     await familyRef.delete();
   }
 
+  // Função auxiliar para limpar timestamps e objetos não encodáveis
+  Map<String, dynamic> _sanitizarDados(Map<String, dynamic> rawData) {
+    final Map<String, dynamic> mapaLimpo = {};
+    rawData.forEach((key, value) {
+      if (value is Timestamp) {
+        mapaLimpo[key] = value.toDate().toIso8601String();
+      } else if (value is Map<String, dynamic>) {
+        mapaLimpo[key] = _sanitizarDados(value);
+      } else if (value is List) {
+        mapaLimpo[key] = value.map((item) {
+          if (item is Map<String, dynamic>) {
+            return _sanitizarDados(item);
+          } else if (item is Timestamp) {
+            return item.toDate().toIso8601String();
+          }
+          return item;
+        }).toList();
+      } else {
+        mapaLimpo[key] = value;
+      }
+    });
+    return mapaLimpo;
+  }
+
   Future<String> fazerBackup() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception('Utilizador não autenticado.');
@@ -69,11 +93,17 @@ class FamilyService {
     final transactionsSnapshot = await _db.collection('families').doc(familyId).collection('transactions').get();
     final historySnapshot = await _db.collection('families').doc(familyId).collection('history').get();
 
+    // Sanitiza as informações principais da família
+    Map<String, dynamic> familyInfoClean = {};
+    if (familyDoc.exists && familyDoc.data() != null) {
+      familyInfoClean = _sanitizarDados(familyDoc.data()!);
+    }
+
     // Validação e estruturação explícita para o Backup
     final Map<String, dynamic> backupData = {
-      'familyInfo': familyDoc.exists && familyDoc.data() != null ? Map<String, dynamic>.from(familyDoc.data()!) : {},
+      'familyInfo': familyInfoClean,
       'members': membersSnapshot.docs.map((doc) {
-        final data = doc.data();
+        final data = _sanitizarDados(doc.data());
         return {
           'id': doc.id,
           'nome': data['nome']?.toString() ?? 'Sem Nome',
@@ -82,7 +112,7 @@ class FamilyService {
         };
       }).toList(),
       'transactions': transactionsSnapshot.docs.map((doc) {
-        final data = doc.data();
+        final data = _sanitizarDados(doc.data());
         return {
           'id': doc.id,
           'categoria': data['categoria']?.toString() ?? 'Geral',
@@ -90,15 +120,17 @@ class FamilyService {
           'valor': (data['valor'] ?? 0.0).toDouble(),
           'tipo': data['tipo']?.toString() ?? 'despesa',
           'status': data['status']?.toString() ?? 'Pendente',
+          'createdAt': data['createdAt'],
         };
       }).toList(),
       'history': historySnapshot.docs.map((doc) {
-        final data = doc.data();
+        final data = _sanitizarDados(doc.data());
         return {
           'acao': data['acao']?.toString() ?? 'Ação',
           'detalhes': data['detalhes']?.toString() ?? '',
           'usuario': data['usuario']?.toString() ?? '',
           'ip': data['ip']?.toString() ?? '',
+          'createdAt': data['createdAt'],
         };
       }).toList(),
       'backupDate': DateTime.now().toIso8601String(),
@@ -143,13 +175,23 @@ class FamilyService {
       for (var tx in data['transactions']) {
         if (tx is Map) {
           final String id = tx['id']?.toString() ?? _db.collection('families').doc().id;
+          
+          // Trata a data de criação caso exista no backup
+          dynamic createdAtValue = FieldValue.serverTimestamp();
+          if (tx['createdAt'] != null) {
+            final parsedDate = DateTime.tryParse(tx['createdAt'].toString());
+            if (parsedDate != null) {
+              createdAtValue = Timestamp.fromDate(parsedDate);
+            }
+          }
+
           await familyRef.collection('transactions').doc(id).set({
             'categoria': tx['categoria']?.toString() ?? 'Geral',
             'descricao': tx['descricao']?.toString() ?? '',
             'valor': (tx['valor'] ?? 0.0).toDouble(),
             'tipo': tx['tipo']?.toString() ?? 'despesa',
             'status': tx['status']?.toString() ?? 'Pendente',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt': createdAtValue,
           });
         }
       }
@@ -159,12 +201,20 @@ class FamilyService {
     if (data['history'] != null && data['history'] is List) {
       for (var hist in data['history']) {
         if (hist is Map) {
+          dynamic createdAtValue = FieldValue.serverTimestamp();
+          if (hist['createdAt'] != null) {
+            final parsedDate = DateTime.tryParse(hist['createdAt'].toString());
+            if (parsedDate != null) {
+              createdAtValue = Timestamp.fromDate(parsedDate);
+            }
+          }
+
           await familyRef.collection('history').add({
             'acao': hist['acao']?.toString() ?? 'Histórico',
             'detalhes': hist['detalhes']?.toString() ?? '',
             'usuario': hist['usuario']?.toString() ?? user.email ?? '',
             'ip': hist['ip']?.toString() ?? 'Sistema',
-            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt': createdAtValue,
           });
         }
       }
