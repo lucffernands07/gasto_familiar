@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 
 class FamilyService {
   static final FamilyService _instance = FamilyService._internal();
@@ -9,6 +11,9 @@ class FamilyService {
   FamilyService._internal();
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['https://www.googleapis.com/auth/drive.file'],
+  );
 
   Future<String> getActiveFamilyId() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -176,7 +181,6 @@ class FamilyService {
         if (tx is Map) {
           final String id = tx['id']?.toString() ?? _db.collection('families').doc().id;
           
-          // Trata a data de criação caso exista no backup
           dynamic createdAtValue = FieldValue.serverTimestamp();
           if (tx['createdAt'] != null) {
             final parsedDate = DateTime.tryParse(tx['createdAt'].toString());
@@ -231,5 +235,133 @@ class FamilyService {
       'ip': nomeDispositivo,
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  // Backup no Google Drive (procura e substitui o ficheiro anterior)
+  Future<void> fazerBackupGoogleDrive() async {
+    final jsonString = await fazerBackup();
+
+    GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
+    googleUser ??= await _googleSignIn.signInSilently();
+    googleUser ??= await _googleSignIn.signIn();
+
+    if (googleUser == null) {
+      throw Exception('Autenticação com o Google cancelada.');
+    }
+
+    final authHeaders = await googleUser.authHeaders;
+    final client = http.Client();
+
+    try {
+      const fileName = 'gasto_familiar_backup.json';
+
+      final searchResponse = await client.get(
+        Uri.parse('https://www.googleapis.com/drive/v3/files?q=name=\'$fileName\' and trashed=false'),
+        headers: authHeaders,
+      );
+
+      String? fileId;
+      if (searchResponse.statusCode == 200) {
+        final data = jsonDecode(searchResponse.body);
+        final files = data['files'] as List;
+        if (files.isNotEmpty) {
+          fileId = files[0]['id'];
+        }
+      }
+
+      if (fileId != null) {
+        final updateResponse = await client.patch(
+          Uri.parse('https://www.googleapis.com/upload/drive/v3/files/$fileId?uploadType=media'),
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: jsonString,
+        );
+        if (updateResponse.statusCode != 200) {
+          throw Exception('Erro ao atualizar o backup no Google Drive.');
+        }
+      } else {
+        final createResponse = await client.post(
+          Uri.parse('https://www.googleapis.com/drive/v3/files'),
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'name': fileName}),
+        );
+
+        if (createResponse.statusCode != 200 && createResponse.statusCode != 201) {
+          throw Exception('Erro ao criar o ficheiro no Google Drive.');
+        }
+
+        final createFiledata = jsonDecode(createResponse.body);
+        fileId = createFiledata['id'];
+
+        final uploadResponse = await client.patch(
+          Uri.parse('https://www.googleapis.com/upload/drive/v3/files/$fileId?uploadType=media'),
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json',
+          },
+          body: jsonString,
+        );
+
+        if (uploadResponse.statusCode != 200) {
+          throw Exception('Erro ao enviar os dados para o Google Drive.');
+        }
+      }
+    } finally {
+      client.close();
+    }
+  }
+
+  // Restaurar do Google Drive
+  Future<void> restaurarGoogleDrive() async {
+    GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
+    googleUser ??= await _googleSignIn.signInSilently();
+    googleUser ??= await _googleSignIn.signIn();
+
+    if (googleUser == null) {
+      throw Exception('Autenticação com o Google cancelada.');
+    }
+
+    final authHeaders = await googleUser.authHeaders;
+    final client = http.Client();
+
+    try {
+      const fileName = 'gasto_familiar_backup.json';
+
+      final searchResponse = await client.get(
+        Uri.parse('https://www.googleapis.com/drive/v3/files?q=name=\'$fileName\' and trashed=false'),
+        headers: authHeaders,
+      );
+
+      if (searchResponse.statusCode != 200) {
+        throw Exception('Erro ao procurar backup no Google Drive.');
+      }
+
+      final data = jsonDecode(searchResponse.body);
+      final files = data['files'] as List;
+      if (files.isEmpty) {
+        throw Exception('Nenhum arquivo de backup encontrado no Google Drive.');
+      }
+
+      final fileId = files[0]['id'];
+
+      final downloadResponse = await client.get(
+        Uri.parse('https://www.googleapis.com/drive/v3/files/$fileId?alt=media'),
+        headers: authHeaders,
+      );
+
+      if (downloadResponse.statusCode != 200) {
+        throw Exception('Erro ao descarregar o backup do Google Drive.');
+      }
+
+      final jsonString = utf8.decode(downloadResponse.bodyBytes);
+      await restaurarBackup(jsonString);
+    } finally {
+      client.close();
+    }
   }
 }
