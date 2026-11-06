@@ -253,14 +253,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  List<PlatformFile> files = await FilePicker.pickFiles(
+                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
                                   );         
 
-                                  if (files.isNotEmpty) {
-                                    PlatformFile file = files.first;
-                                    Uint8List? fileBytes = await file.readAsBytes();
+                                  if (result != null && result.files.isNotEmpty) {
+                                    PlatformFile file = result.files.first;
+                                    Uint8List? fileBytes = file.bytes;
+
+                                    // Compatibilidade caso o .bytes venha nulo no Android/APK
+                                    if (fileBytes == null && file.path != null) {
+                                      // Se necessário em nativo puro, ou se usar bytes diretamente
+                                    }
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
@@ -273,6 +278,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       } finally {
                                         setState(() => _isLoading = false);
                                       }
+                                    } else {
+                                      _mostrarMensagem('Erro ao ler os bytes do arquivo.');
                                     }
                                   }
                                 },
