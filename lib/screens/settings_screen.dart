@@ -101,13 +101,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() => _isLoading = true);
 
               try {
-                // Envia email informativo do Firebase antes de excluir
                 await user?.sendEmailVerification();
-                
-                // Exclui a conta do Firebase Auth
                 await user?.delete();
 
-                // Limpa os dados locais de termos/preferências
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.clear();
 
@@ -253,14 +249,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  List<PlatformFile>? files = await FilePicker.pickFiles(
+                                  // Compatível com file_picker 13.x (retorna List<PlatformFile> diretamente)
+                                  List<PlatformFile> files = await FilePicker.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
                                   );         
 
-                                  if (files != null && files.isNotEmpty) {
+                                  if (files.isNotEmpty) {
                                     PlatformFile file = files.first;
-                                    Uint8List? fileBytes = file.bytes;
+                                    
+                                    // Utiliza readAsBytes() conforme exigido pela versão 13.x
+                                    Uint8List? fileBytes = await file.readAsBytes();
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
@@ -317,7 +316,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                // Zerar Banco de Dados em Laranja
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -350,7 +348,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                // Excluir Conta e Dados em Vermelho
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -360,7 +357,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
                 ),
                 const SizedBox(height: 24),
-                // Identificação do Banco no último lugar
                 Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
                 Container(
