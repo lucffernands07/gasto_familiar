@@ -253,19 +253,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                  List<PlatformFile>? files = await FilePicker.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
                                   );         
 
-                                  if (result != null && result.files.isNotEmpty) {
-                                    PlatformFile file = result.files.first;
+                                  if (files != null && files.isNotEmpty) {
+                                    PlatformFile file = files.first;
                                     Uint8List? fileBytes = file.bytes;
-
-                                    // Compatibilidade caso o .bytes venha nulo no Android/APK
-                                    if (fileBytes == null && file.path != null) {
-                                      // Se necessário em nativo puro, ou se usar bytes diretamente
-                                    }
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
