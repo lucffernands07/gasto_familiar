@@ -21,7 +21,6 @@ class FamilyService {
     return user.uid;
   }
 
-  // Preferências visuais salvas no SharedPreferences do dispositivo
   Future<String> getAppTitle() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('custom_app_title') ?? 'Meus Gastos';
@@ -43,7 +42,6 @@ class FamilyService {
     await prefs.setString('custom_greeting_name', name);
   }
 
-  // Métodos de Backup, Restauração e Zerar Banco
   Future<void> zerarBancoDados() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -64,7 +62,6 @@ class FamilyService {
     await familyRef.delete();
   }
 
-  // Função auxiliar para limpar timestamps e objetos não encodáveis
   Map<String, dynamic> _sanitizarDados(Map<String, dynamic> rawData) {
     final Map<String, dynamic> mapaLimpo = {};
     rawData.forEach((key, value) {
@@ -98,13 +95,11 @@ class FamilyService {
     final transactionsSnapshot = await _db.collection('families').doc(familyId).collection('transactions').get();
     final historySnapshot = await _db.collection('families').doc(familyId).collection('history').get();
 
-    // Sanitiza as informações principais da família
     Map<String, dynamic> familyInfoClean = {};
     if (familyDoc.exists && familyDoc.data() != null) {
       familyInfoClean = _sanitizarDados(familyDoc.data()!);
     }
 
-    // Validação e estruturação explícita para o Backup
     final Map<String, dynamic> backupData = {
       'familyInfo': familyInfoClean,
       'members': membersSnapshot.docs.map((doc) {
@@ -152,15 +147,12 @@ class FamilyService {
     final familyId = user.uid;
     final familyRef = _db.collection('families').doc(familyId);
 
-    // Limpa a base atual antes de aplicar os dados validados
     await zerarBancoDados();
 
-    // Valida e restaura informações gerais da família
     if (data['familyInfo'] != null && (data['familyInfo'] as Map).isNotEmpty) {
       await familyRef.set(Map<String, dynamic>.from(data['familyInfo']));
     }
 
-    // Valida e restaura os membros
     if (data['members'] != null && data['members'] is List) {
       for (var member in data['members']) {
         if (member is Map) {
@@ -175,7 +167,6 @@ class FamilyService {
       }
     }
 
-    // Valida e restaura as transações (Planilha) preservando IDs e campos exatos
     if (data['transactions'] != null && data['transactions'] is List) {
       for (var tx in data['transactions']) {
         if (tx is Map) {
@@ -201,7 +192,6 @@ class FamilyService {
       }
     }
 
-    // Valida e restaura o histórico antigo
     if (data['history'] != null && data['history'] is List) {
       for (var hist in data['history']) {
         if (hist is Map) {
@@ -224,7 +214,6 @@ class FamilyService {
       }
     }
 
-    // Identifica o dispositivo atual e regista a auditoria de restauração bem-sucedida
     final prefs = await SharedPreferences.getInstance();
     final nomeDispositivo = prefs.getString('device_nickname') ?? 'Dispositivo Padrão';
 
@@ -237,10 +226,8 @@ class FamilyService {
     });
   }
 
-  // Backup no Google Drive (procura e substitui o ficheiro anterior)
-  Future<void> fazerBackupGoogleDrive() async {
-    final jsonString = await fazerBackup();
-
+  // Obter cabeçalhos de autenticação do Google de forma segura
+  Future> _getGoogleAuthHeaders() async {
     GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
     googleUser ??= await _googleSignIn.signInSilently();
     googleUser ??= await _googleSignIn.signIn();
@@ -249,7 +236,19 @@ class FamilyService {
       throw Exception('Autenticação com o Google cancelada.');
     }
 
-    final authHeaders = await googleUser.authHeaders;
+    final auth = await googleUser.authentication;
+    final accessToken = auth.accessToken;
+
+    if (accessToken == null) {
+      throw Exception('Não foi possível obter o token de acesso do Google.');
+    }
+
+    return {'Authorization': 'Bearer $accessToken'};
+  }
+
+  Future<void> fazerBackupGoogleDrive() async {
+    final jsonString = await fazerBackup();
+    final authHeaders = await _getGoogleAuthHeaders();
     final client = http.Client();
 
     try {
@@ -316,17 +315,8 @@ class FamilyService {
     }
   }
 
-  // Restaurar do Google Drive
   Future<void> restaurarGoogleDrive() async {
-    GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
-    googleUser ??= await _googleSignIn.signInSilently();
-    googleUser ??= await _googleSignIn.signIn();
-
-    if (googleUser == null) {
-      throw Exception('Autenticação com o Google cancelada.');
-    }
-
-    final authHeaders = await googleUser.authHeaders;
+    final authHeaders = await _getGoogleAuthHeaders();
     final client = http.Client();
 
     try {
