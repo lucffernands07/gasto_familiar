@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
-import '../services/backup_service.dart';
+import '../services/backup_service.dart'; // ou family_service.dart conforme o seu nome de arquivo
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -48,7 +48,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
-  // Função para processar a exclusão segura da conta
   void _confirmarEExcluirConta(BuildContext context, User? user, Color cardColor, Color textColor, Color subtitleColor) {
     final emailController = TextEditingController();
     final emailLogado = user?.email ?? '';
@@ -63,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tem certeza absoluta de que deseja eliminar a sua conta e todos os dados associados? Esta ação é irreversível.',
+              'Tem certeza absoluta de que deseja eliminar a sua conta e todos los dados associados? Esta ação é irreversível.',
               style: TextStyle(color: subtitleColor, fontSize: 13),
             ),
             const SizedBox(height: 16),
@@ -97,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return;
               }
 
-              Navigator.pop(context); // Fecha o dialog
+              Navigator.pop(context);
               setState(() => _isLoading = true);
 
               try {
@@ -107,9 +106,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.clear();
 
-                _mostrarMensagem('Conta eliminada com sucesso. Uma nova conta poderá ser criada ao entrar novamente.');
+                _mostrarMensagem('Conta eliminada com sucesso.');
               } catch (e) {
-                _mostrarMensagem('Erro ao excluir conta: $e. Poderá ser necessário reautenticar-se.');
+                _mostrarMensagem('Erro ao excluir conta: $e.');
               } finally {
                 if (mounted) setState(() => _isLoading = false);
               }
@@ -198,37 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('Gestão de Dados', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 12),
 
-                // OPÇÃO 1: Fazer Backup Local (Manual)
-                ListTile(
-                  tileColor: cardColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  leading: const Icon(Icons.download, color: Colors.blue),
-                  title: Text('Fazer Backup Local (Manual)', style: TextStyle(color: textColor)),
-                  subtitle: Text('Baixar arquivo .json para o dispositivo', style: TextStyle(color: subtitleColor)),
-                  onTap: () async {
-                    setState(() => _isLoading = true);
-                    try {
-                      final jsonString = await FamilyService().fazerBackup();
-                      final bytes = utf8.encode(jsonString);
-                      
-                      await FileSaver.instance.saveFile(
-                        name: 'gasto_familiar_backup_${DateTime.now().millisecondsSinceEpoch}',
-                        bytes: Uint8List.fromList(bytes),
-                        ext: 'json',
-                        mimeType: MimeType.json,
-                      );
-                      
-                      _mostrarMensagem('Backup local baixado com sucesso!');
-                    } catch (e) {
-                      _mostrarMensagem('Erro ao gerar backup: $e');
-                    } finally {
-                      setState(() => _isLoading = false);
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                // OPÇÃO 2: Backup no Google Drive (Nuvem com substituição)
+                // 1. Backup no Google Drive
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -249,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Restaurar do Google Drive
+                // 2. Restaurar do Google Drive
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -288,12 +257,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Restaurar Local (.json ou texto)
+                // 3. Fazer Backup Local (Manual)
+                ListTile(
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.download, color: Colors.blue),
+                  title: Text('Fazer Backup Local (Manual)', style: TextStyle(color: textColor)),
+                  subtitle: Text('Baixar arquivo .json para o dispositivo', style: TextStyle(color: subtitleColor)),
+                  onTap: () async {
+                    setState(() => _isLoading = true);
+                    try {
+                      final jsonString = await FamilyService().fazerBackup();
+                      final bytes = utf8.encode(jsonString);
+                      
+                      await FileSaver.instance.saveFile(
+                        name: 'gasto_familiar_backup_${DateTime.now().millisecondsSinceEpoch}',
+                        bytes: Uint8List.fromList(bytes),
+                        ext: 'json',
+                        mimeType: MimeType.json,
+                      );
+                      
+                      _mostrarMensagem('Backup baixado com sucesso!');
+                    } catch (e) {
+                      _mostrarMensagem('Erro ao gerar backup: $e');
+                    } finally {
+                      setState(() => _isLoading = false);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // 4. Restaurar Backup Local (Manual)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.upload, color: Colors.green),
-                  title: Text('Restaurar Backup Local', style: TextStyle(color: textColor)),
+                  title: Text('Restaurar Backup Local (Manual)', style: TextStyle(color: textColor)),
                   subtitle: Text('Selecionar arquivo .json ou colar texto', style: TextStyle(color: subtitleColor)),
                   onTap: () {
                     final controller = TextEditingController();
