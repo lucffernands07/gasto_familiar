@@ -351,7 +351,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                                   if (result != null && result.files.isNotEmpty) {
                                     PlatformFile file = result.files.first;
-                                    Uint8List? fileBytes = file.bytes ?? await file.readStream?.fold<List<int>>([], (buffer, chunk) => buffer..addAll(chunk));
+                                    Uint8List? fileBytes = file.bytes;
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
@@ -458,3 +458,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
