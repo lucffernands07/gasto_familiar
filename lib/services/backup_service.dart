@@ -245,6 +245,17 @@ class FamilyService {
       throw Exception('Autenticação com o Google cancelada.');
     }
 
+    // Na Web, é obrigatório garantir explicitamente que o escopo do Drive foi concedido na sessão atual
+    if (kIsWeb) {
+      final bool hasAccess = await _googleSignIn.canAccessScopes(['https://www.googleapis.com/auth/drive.file']);
+      if (!hasAccess) {
+        final bool granted = await _googleSignIn.requestScopes(['https://www.googleapis.com/auth/drive.file']);
+        if (!granted) {
+          throw Exception('Permissão para o Google Drive foi recusada.');
+        }
+      }
+    }
+
     final GoogleSignInAuthentication auth = await googleUser.authentication;
     final String? accessToken = auth.accessToken;
 
