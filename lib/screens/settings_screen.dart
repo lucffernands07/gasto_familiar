@@ -126,13 +126,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final uid = user?.uid ?? 'Não autenticado';
 
     final Color bgColor = widget.isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
     final Color cardColor = widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
     final Color textColor = widget.isDarkMode ? Colors.white : const Color(0xFF333333);
     final Color subtitleColor = widget.isDarkMode ? Colors.white70 : const Color(0xFF666666);
-    final Color borderColor = widget.isDarkMode ? Colors.white24 : const Color(0xFFDCD6CD);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -353,7 +351,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                                   if (result != null && result.files.isNotEmpty) {
                                     PlatformFile file = result.files.first;
-                                    Uint8List? fileBytes = file.bytes;
+                                    Uint8List? fileBytes = file.bytes ?? await file.readStream?.fold<List<int>>([], (buffer, chunk) => buffer..addAll(chunk));
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
@@ -460,6 +458,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-    );
-  }
-}
