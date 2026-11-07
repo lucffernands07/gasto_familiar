@@ -4,7 +4,15 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  
+  // Instância do GoogleSignIn configurada explicitamente com o Web Client ID e os scopes do Drive
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: kIsWeb ? '170411335258-0oa5v413oh9e7ta7h8qu2lsane6h44eh.apps.googleusercontent.com' : null,
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/drive.file',
+    ],
+  );
 
   // Obter o utilizador atual
   User? get currentUser => _auth.currentUser;
@@ -17,9 +25,18 @@ class AuthService {
     try {
       if (kIsWeb) {
         // --- FLUXO PARA NAVEGADOR (WEB / GITHUB PAGES) ---
-        // Usa o pop-up nativo do Firebase para Web
-        GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        return await _auth.signInWithPopup(googleProvider);
+        // Força a utilização do fluxo web integrado com o GoogleSignIn para respeitar o clientId e scopes do Drive
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null;
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        return await _auth.signInWithCredential(credential);
       } else {
         // --- FLUXO PARA APLICATIVO NATIVO (ANDROID / IOS) ---
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -37,15 +54,13 @@ class AuthService {
       }
     } catch (e) {
       debugPrint('Erro ao fazer login com o Google: $e');
-      rethrow; // Repassa o erro para a tela exibir na SnackBar se necessário
+      rethrow;
     }
   }
 
   // Função para terminar sessão (Logout)
   Future<void> signOut() async {
-    if (!kIsWeb) {
-      await _googleSignIn.signOut();
-    }
+    await _googleSignIn.signOut();
     await _auth.signOut();
   }
 }
