@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart'; // Necessário para usar o kIsWeb
+import 'package:flutter/foundation.dart';
 
 class FamilyService {
   static final FamilyService _instance = FamilyService._internal();
@@ -13,7 +13,6 @@ class FamilyService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   
-  // CORRIGIDO: Adicionado o clientId web e os scopes corretos na instância do GoogleSignIn do Backup
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb ? '170411335258-0oa5v413oh9e7ta7h8qu2lsane6h44eh.apps.googleusercontent.com' : null,
     scopes: ['https://www.googleapis.com/auth/drive.file'],
@@ -230,17 +229,24 @@ class FamilyService {
     });
   }
 
+  // Lógica robusta do token do Drive ajustada para Web e Mobile
   Future <Map<String, String>> _getGoogleAuthHeaders() async {
     GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
-    googleUser ??= await _googleSignIn.signInSilently();
-    googleUser ??= await _googleSignIn.signIn();
+    
+    if (googleUser == null) {
+      googleUser = await _googleSignIn.signInSilently();
+    }
+    
+    if (googleUser == null) {
+      googleUser = await _googleSignIn.signIn();
+    }
 
     if (googleUser == null) {
       throw Exception('Autenticação com o Google cancelada.');
     }
 
-    final auth = await googleUser.authentication;
-    final accessToken = auth.accessToken;
+    final GoogleSignInAuthentication auth = await googleUser.authentication;
+    final String? accessToken = auth.accessToken;
 
     if (accessToken == null) {
       throw Exception('Não foi possível obter o token de acesso do Google.');
