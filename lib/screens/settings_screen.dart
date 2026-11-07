@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
-import '../services/backup_service.dart'; // ou family_service.dart conforme o seu nome de arquivo
+import '../services/backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -17,6 +17,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = false;
+  bool _autoBackupAtivo = false;
   final _titleController = TextEditingController();
   final _greetingController = TextEditingController();
   final _deviceController = TextEditingController();
@@ -33,12 +34,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     
     final prefs = await SharedPreferences.getInstance();
     final deviceName = prefs.getString('device_nickname') ?? '';
+    final autoBackup = prefs.getBool('auto_backup_ativo') ?? false;
 
     if (mounted) {
       setState(() {
         _titleController.text = title;
         _greetingController.text = greeting;
         _deviceController.text = deviceName;
+        _autoBackupAtivo = autoBackup;
       });
     }
   }
@@ -62,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tem certeza absoluta de que deseja eliminar a sua conta e todos los dados associados? Esta ação é irreversível.',
+              'Tem certeza absoluta de que deseja eliminar a sua conta e todos os dados associados? Esta ação é irreversível.',
               style: TextStyle(color: subtitleColor, fontSize: 13),
             ),
             const SizedBox(height: 16),
@@ -194,15 +197,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: const Text('Salvar Alterações', style: TextStyle(color: Color(0xFF2C3E50))),
                 ),
                 const SizedBox(height: 24),
+                
+                // --- GESTÃO DE DADOS ---
                 Text('Gestão de Dados', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // 1. Backup no Google Drive
+                // BACKUP GOOGLE DRIVE
+                Text('BACKUP GOOGLE DRIVE', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue[700])),
+                const SizedBox(height: 8),
+
+                // 1. Salvar dados (Google Drive)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.cloud_upload, color: Colors.indigo),
-                  title: Text('Backup no Google Drive', style: TextStyle(color: textColor)),
+                  title: Text('Salvar dados', style: TextStyle(color: textColor)),
                   subtitle: Text('Salva ou substitui o backup na nuvem', style: TextStyle(color: subtitleColor)),
                   onTap: () async {
                     setState(() => _isLoading = true);
@@ -216,14 +225,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
-                // 2. Restaurar do Google Drive
+                // 2. Restaurar dados (Google Drive)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.cloud_download, color: Colors.teal),
-                  title: Text('Restaurar do Google Drive', style: TextStyle(color: textColor)),
+                  title: Text('Restaurar dados', style: TextStyle(color: textColor)),
                   subtitle: Text('Baixa e restaura o backup salvo no Drive', style: TextStyle(color: subtitleColor)),
                   onTap: () async {
                     showDialog(
@@ -255,14 +264,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
-                // 3. Fazer Backup Local (Manual)
+                // 3. Ativar Backup automático
+                SwitchListTile(
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  secondary: const Icon(Icons.timer, color: Colors.orange),
+                  title: Text('Ativar Backup automático', style: TextStyle(color: textColor)),
+                  subtitle: Text('Sincroniza automaticamente ao abrir o app', style: TextStyle(color: subtitleColor)),
+                  value: _autoBackupAtivo,
+                  onChanged: (bool valor) async {
+                    setState(() => _autoBackupAtivo = valor);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('auto_backup_ativo', valor);
+                    _mostrarMensagem(valor ? 'Backup automático ativado!' : 'Backup automático desativado.');
+                  },
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Divider(thickness: 1.5),
+                ),
+
+                // BACKUP LOCAL
+                Text('BACKUP LOCAL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.brown[400])),
+                const SizedBox(height: 8),
+
+                // 4. Salvar dados (Local)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.download, color: Colors.blue),
-                  title: Text('Fazer Backup Local (Manual)', style: TextStyle(color: textColor)),
+                  title: Text('Salvar dados', style: TextStyle(color: textColor)),
                   subtitle: Text('Baixar arquivo .json para o dispositivo', style: TextStyle(color: subtitleColor)),
                   onTap: () async {
                     setState(() => _isLoading = true);
@@ -285,14 +319,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
-                // 4. Restaurar Backup Local (Manual)
+                // 5. Restaurar dados (Local)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.upload, color: Colors.green),
-                  title: Text('Restaurar Backup Local (Manual)', style: TextStyle(color: textColor)),
+                  title: Text('Restaurar dados', style: TextStyle(color: textColor)),
                   subtitle: Text('Selecionar arquivo .json ou colar texto', style: TextStyle(color: subtitleColor)),
                   onTap: () {
                     final controller = TextEditingController();
@@ -312,14 +346,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  List<PlatformFile> files = await FilePicker.pickFiles(
+                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
                                   );         
 
-                                  if (files.isNotEmpty) {
-                                    PlatformFile file = files.first;
-                                    Uint8List? fileBytes = await file.readAsBytes();
+                                  if (result != null && result.files.isNotEmpty) {
+                                    PlatformFile file = result.files.first;
+                                    Uint8List? fileBytes = file.bytes;
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
@@ -375,87 +409,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Divider(thickness: 1.5),
+                ),
 
                 // Zerar Banco de Dados
                 ListTile(
-                  tileColor: cardColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  leading: const Icon(Icons.delete_forever, color: Colors.orange),
-                  title: const Text('Zerar Banco de Dados', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                  subtitle: Text('Apagar todas as informações e transações', style: TextStyle(color: subtitleColor)),
-                  onTap: () async {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: cardColor,
-                        title: Text('Zerar Banco', style: TextStyle(color: textColor)),
-                        content: Text('Tem certeza que deseja apagar tudo?', style: TextStyle(color: subtitleColor)),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                            onPressed: () async {
-                              Navigator.pop(context);
-                              setState(() => _isLoading = true);
-                              await FamilyService().zerarBancoDados();
-                              setState(() => _isLoading = false);
-                              _mostrarMensagem('Banco zerado com sucesso.');
-                            },
-                            child: const Text('Zerar', style: TextStyle(color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                // Excluir Conta e Dados
-                ListTile(
-                  tileColor: cardColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  leading: const Icon(Icons.person_remove_rounded, color: Colors.red),
-                  title: const Text('Excluir Conta e Dados', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  subtitle: Text('Remove permanentemente a conta e dados associados', style: TextStyle(color: subtitleColor)),
-                  onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
-                ),
-                const SizedBox(height: 24),
-
-                // Identificação do Banco
-                Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('UID do Utilizador / Banco', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            const SizedBox(height: 4),
-                            Text(uid, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.copy, color: textColor),
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: uid));
-                          _mostrarMensagem('UID copiado!');
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
+         
