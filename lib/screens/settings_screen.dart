@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
-import '../services/family_service.dart';
+import '../services/backup_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -197,12 +197,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 24),
                 Text('Gestão de Dados', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 12),
+
+                // OPÇÃO 1: Fazer Backup Local (Manual)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.download, color: Colors.blue),
-                  title: Text('Fazer Backup', style: TextStyle(color: textColor)),
-                  subtitle: Text('Baixar arquivo .json de backup', style: TextStyle(color: subtitleColor)),
+                  title: Text('Fazer Backup Local (Manual)', style: TextStyle(color: textColor)),
+                  subtitle: Text('Baixar arquivo .json para o dispositivo', style: TextStyle(color: subtitleColor)),
                   onTap: () async {
                     setState(() => _isLoading = true);
                     try {
@@ -216,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         mimeType: MimeType.json,
                       );
                       
-                      _mostrarMensagem('Backup baixado com sucesso!');
+                      _mostrarMensagem('Backup local baixado com sucesso!');
                     } catch (e) {
                       _mostrarMensagem('Erro ao gerar backup: $e');
                     } finally {
@@ -225,11 +227,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+
+                // OPÇÃO 2: Backup no Google Drive (Nuvem com substituição)
+                ListTile(
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.cloud_upload, color: Colors.indigo),
+                  title: Text('Backup no Google Drive', style: TextStyle(color: textColor)),
+                  subtitle: Text('Salva ou substitui o backup na nuvem', style: TextStyle(color: subtitleColor)),
+                  onTap: () async {
+                    setState(() => _isLoading = true);
+                    try {
+                      await FamilyService().fazerBackupGoogleDrive();
+                      _mostrarMensagem('Backup enviado para o Google Drive com sucesso!');
+                    } catch (e) {
+                      _mostrarMensagem('Erro no Google Drive: $e');
+                    } finally {
+                      setState(() => _isLoading = false);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Restaurar do Google Drive
+                ListTile(
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.cloud_download, color: Colors.teal),
+                  title: Text('Restaurar do Google Drive', style: TextStyle(color: textColor)),
+                  subtitle: Text('Baixa e restaura o backup salvo no Drive', style: TextStyle(color: subtitleColor)),
+                  onTap: () async {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: cardColor,
+                        title: Text('Restaurar da Nuvem', style: TextStyle(color: textColor)),
+                        content: Text('Deseja substituir os dados atuais pelo backup guardado no Google Drive?', style: TextStyle(color: subtitleColor)),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              setState(() => _isLoading = true);
+                              try {
+                                await FamilyService().restaurarGoogleDrive();
+                                _mostrarMensagem('Dados restaurados do Google Drive com sucesso!');
+                              } catch (e) {
+                                _mostrarMensagem('Erro ao restaurar do Drive: $e');
+                              } finally {
+                                setState(() => _isLoading = false);
+                              }
+                            },
+                            child: const Text('Restaurar', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Restaurar Local (.json ou texto)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.upload, color: Colors.green),
-                  title: Text('Restaurar Backup', style: TextStyle(color: textColor)),
+                  title: Text('Restaurar Backup Local', style: TextStyle(color: textColor)),
                   subtitle: Text('Selecionar arquivo .json ou colar texto', style: TextStyle(color: subtitleColor)),
                   onTap: () {
                     final controller = TextEditingController();
@@ -237,7 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       context: context,
                       builder: (context) => AlertDialog(
                         backgroundColor: cardColor,
-                        title: Text('Restaurar Backup', style: TextStyle(color: textColor)),
+                        title: Text('Restaurar Backup Local', style: TextStyle(color: textColor)),
                         content: SingleChildScrollView(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -249,7 +313,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  // Compatível com file_picker 13.x (retorna List<PlatformFile> diretamente)
                                   List<PlatformFile> files = await FilePicker.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
@@ -257,8 +320,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                                   if (files.isNotEmpty) {
                                     PlatformFile file = files.first;
-                                    
-                                    // Utiliza readAsBytes() conforme exigido pela versão 13.x
                                     Uint8List? fileBytes = await file.readAsBytes();
 
                                     if (fileBytes != null) {
@@ -316,6 +377,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+
+                // Zerar Banco de Dados
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -348,6 +411,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+
+                // Excluir Conta e Dados
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -357,6 +422,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
                 ),
                 const SizedBox(height: 24),
+
+                // Identificação do Banco
                 Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
                 Container(
