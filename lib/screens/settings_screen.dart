@@ -417,4 +417,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // Zerar Banco de Dados
                 ListTile(
-         
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.delete_forever, color: Colors.orange),
+                  title: const Text('Zerar Banco de Dados', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Apagar todas as informações e transações', style: TextStyle(color: subtitleColor)),
+                  onTap: () async {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: cardColor,
+                        title: Text('Zerar Banco', style: TextStyle(color: textColor)),
+                        content: Text('Tem certeza que deseja apagar tudo?', style: TextStyle(color: subtitleColor)),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              setState(() => _isLoading = true);
+                              await FamilyService().zerarBancoDados();
+                              setState(() => _isLoading = false);
+                              _mostrarMensagem('Banco zerado com sucesso.');
+                            },
+                            child: const Text('Zerar', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Excluir Conta e Dados
+                ListTile(
+                  tileColor: cardColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.person_remove, color: Colors.redAccent),
+                  title: const Text('Excluir Conta e Dados', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  subtitle: Text('Remove permanentemente a conta e dados associados', style: TextStyle(color: subtitleColor)),
+                  onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
+                ),
+              ],
+            ),
+    );
+  }
+}
