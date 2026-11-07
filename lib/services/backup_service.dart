@@ -227,7 +227,7 @@ class FamilyService {
   }
 
   // Obter cabeçalhos de autenticação do Google de forma segura
-  Future> _getGoogleAuthHeaders() async {
+  Future <Map<String, String>> _getGoogleAuthHeaders() async {
     GoogleSignInAccount? googleUser = _googleSignIn.currentUser;
     googleUser ??= await _googleSignIn.signInSilently();
     googleUser ??= await _googleSignIn.signIn();
