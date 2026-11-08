@@ -11,7 +11,7 @@ class HeroCard extends StatefulWidget {
   final VoidCallback? onTapReceitas;
   final VoidCallback? onTapGastos;
   final VoidCallback? onTapDespesasPendentes;
-  final VoidCallback? onTapVale; // Ação ao clicar no card do Vale
+  final VoidCallback? onTapVale;
 
   const HeroCard({
     super.key,
@@ -86,7 +86,6 @@ class _HeroCardState extends State<HeroCard> {
             double gastosPrevios = 0.0;
             double despesasPendentes = 0.0;
             
-            // Variáveis para o cálculo do Vale (Receitas com status Vale - Despesas com status Vale)
             double receitasVale = 0.0;
             double gastosVale = 0.0;
 
@@ -109,26 +108,28 @@ class _HeroCardState extends State<HeroCard> {
                 final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
 
                 if (tipo == 'receita') {
-                  receitasPrevias += amount;
                   if (status == 'Recebido') {
                     receitasEfetivas += amount;
+                    receitasPrevias += amount;
+                  } else if (status == 'Pendente') {
+                    receitasPrevias += amount;
                   } else if (status == 'Vale') {
-                    receitasVale += amount;
+                    receitasVale += amount; // Vale fica isolado e não mexe no previsto geral
                   }
                 } else {
-                  gastosPrevios += amount;
                   if (status == 'Pago') {
                     gastosEfetivos += amount;
+                    gastosPrevios += amount;
                   } else if (status == 'Pendente') {
                     despesasPendentes += amount;
+                    gastosPrevios += amount;
                   } else if (status == 'Vale') {
-                    gastosVale += amount;
+                    gastosVale += amount; // Vale fica isolado e não mexe no previsto geral
                   }
                 }
               }
             }
 
-            // Saldo total do Vale (Receitas Vale - Gastos Vale)
             final double saldoVale = receitasVale - gastosVale;
             final saldoTotal = receitasEfetivas - gastosEfetivos;
             final saldoPrevio = receitasPrevias - gastosPrevios;
@@ -201,7 +202,6 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Cartão Saldo Família
                   GestureDetector(
                     onTap: widget.onTapSaldoFamilia,
                     child: _buildItemCard(
@@ -213,7 +213,6 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Receitas
                   GestureDetector(
                     onTap: widget.onTapReceitas,
                     child: _buildItemCard(
@@ -226,7 +225,6 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Cartão Gastos (Pagos)
                   GestureDetector(
                     onTap: widget.onTapGastos,
                     child: _buildItemCard(
@@ -239,7 +237,6 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Despesas (A pagar)
                   GestureDetector(
                     onTap: widget.onTapDespesasPendentes,
                     child: _buildItemCard(
@@ -251,14 +248,14 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
 
-                  // NOVO CARTÃO: VALE (Roxo com o número 20 no ícone)
+                  // CARTÃO VALE (SALDO)
                   GestureDetector(
                     onTap: widget.onTapVale,
                     child: _buildItemCard(
-                      'Vale',
+                      'Vale (Saldo)',
                       widget.mostrarSaldo ? 'R\$ ${saldoVale.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                       Colors.purple,
-                      null, // Sem ícone padrão, pois usaremos o número 20
+                      null,
                       customIconText: '20',
                     ),
                   ),
