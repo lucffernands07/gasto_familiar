@@ -367,12 +367,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? const [
                           DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
                           DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                          DropdownMenuItem(value: 'Vale', child: Text('Vale', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
+                          DropdownMenuItem(value: 'Vale', child: Text('Vale')),
                         ]
                       : const [
                           DropdownMenuItem(value: 'Pago', child: Text('Pago')),
                           DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                          DropdownMenuItem(value: 'Vale', child: Text('Vale', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
+                          DropdownMenuItem(value: 'Vale', child: Text('Vale')),
                         ],
                   onChanged: (val) {
                     if (val != null) setStateDialog(() => statusSelecionado = val);
