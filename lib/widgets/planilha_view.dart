@@ -128,7 +128,6 @@ class PlanilhaView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Editar Transação', style: TextStyle(fontWeight: FontWeight.bold)),
-              // Botão da calculadora com o círculo em rosa padrão no canto superior direito
               Container(
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFCBDD),
@@ -153,12 +152,13 @@ class PlanilhaView extends StatelessWidget {
                 TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Valor', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: ['Recebido', 'Pago', 'Pendente'].contains(statusAtual) ? statusAtual : 'Recebido',
+                  value: ['Recebido', 'Pago', 'Pendente', 'Vale'].contains(statusAtual) ? statusAtual : 'Recebido',
                   decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
                     DropdownMenuItem(value: 'Pago', child: Text('Pago')),
                     DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                    DropdownMenuItem(value: 'Vale', child: Text('Vale', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
                   ],
                   onChanged: (val) {
                     if (val != null) setStateDialog(() => statusAtual = val);
@@ -397,7 +397,16 @@ class PlanilhaView extends StatelessWidget {
                   ),
                   ...itens.map((item) {
                     final status = item['status'];
-                    final Color corStatus = (status == 'Pago' || status == 'Recebido') ? Colors.green : Colors.red;
+                    
+                    // Definição da cor do status na tabela (Roxo para 'Vale')
+                    Color corStatus;
+                    if (status == 'Pago' || status == 'Recebido') {
+                      corStatus = Colors.green;
+                    } else if (status == 'Vale') {
+                      corStatus = Colors.purple;
+                    } else {
+                      corStatus = Colors.red;
+                    }
 
                     return InkWell(
                       onTap: () => _mostrarDialogEditarTransacao(context, item['id'], {
