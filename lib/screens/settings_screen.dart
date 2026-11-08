@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
-import '../services/backup_service.dart';
+import '../services/family_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final bool isDarkMode;
@@ -51,6 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
+  // Função para processar a exclusão segura da conta
   void _confirmarEExcluirConta(BuildContext context, User? user, Color cardColor, Color textColor, Color subtitleColor) {
     final emailController = TextEditingController();
     final emailLogado = user?.email ?? '';
@@ -99,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return;
               }
 
-              Navigator.pop(context);
+              Navigator.pop(context); // Fecha o dialog
               setState(() => _isLoading = true);
 
               try {
@@ -109,9 +110,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.clear();
 
-                _mostrarMensagem('Conta eliminada com sucesso.');
+                _mostrarMensagem('Conta eliminada com sucesso. Uma nova conta poderá ser criada ao entrar novamente.');
               } catch (e) {
-                _mostrarMensagem('Erro ao excluir conta: $e.');
+                _mostrarMensagem('Erro ao excluir conta: $e. Poderá ser necessário reautenticar-se.');
               } finally {
                 if (mounted) setState(() => _isLoading = false);
               }
@@ -126,11 +127,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid ?? 'Não autenticado';
 
     final Color bgColor = widget.isDarkMode ? const Color(0xFF121212) : const Color(0xFFFAF6EE);
     final Color cardColor = widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
     final Color textColor = widget.isDarkMode ? Colors.white : const Color(0xFF333333);
     final Color subtitleColor = widget.isDarkMode ? Colors.white70 : const Color(0xFF666666);
+    final Color borderColor = widget.isDarkMode ? Colors.white24 : const Color(0xFFDCD6CD);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -204,6 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('BACKUP GOOGLE DRIVE', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue[700])),
                 const SizedBox(height: 8),
 
+                // 1. Salvar dados (Google Drive)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -224,6 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
+                // 2. Restaurar dados (Google Drive)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -262,6 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
+                // 3. Ativar Backup automático
                 SwitchListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -286,6 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('BACKUP LOCAL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.brown[400])),
                 const SizedBox(height: 8),
 
+                // 4. Salvar dados (Local)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -315,6 +322,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
+                // 5. Restaurar dados (Local) - Lógica original intacta da versão 13.x
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -339,6 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
+                                  // Compatível com file_picker 13.x (retorna List<PlatformFile> diretamente)
                                   List<PlatformFile> files = await FilePicker.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
@@ -346,7 +355,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                                   if (files.isNotEmpty) {
                                     PlatformFile file = files.first;
-                                    Uint8List? fileBytes = file.bytes;
+                                    
+                                    // Utiliza readAsBytes() conforme exigido pela versão 13.x
+                                    Uint8List? fileBytes = await file.readAsBytes();
 
                                     if (fileBytes != null) {
                                       final jsonString = utf8.decode(fileBytes);
@@ -446,10 +457,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  leading: const Icon(Icons.person_remove, color: Colors.redAccent),
-                  title: const Text('Excluir Conta e Dados', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  leading: const Icon(Icons.person_remove_rounded, color: Colors.red),
+                  title: const Text('Excluir Conta e Dados', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                   subtitle: Text('Remove permanentemente a conta e dados associados', style: TextStyle(color: subtitleColor)),
                   onTap: () => _confirmarEExcluirConta(context, user, cardColor, textColor, subtitleColor),
+                ),
+                const SizedBox(height: 24),
+                Text('Identificação do Banco', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('UID do Utilizador / Banco', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(uid, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.copy, color: textColor),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: uid));
+                          _mostrarMensagem('UID copiado!');
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
