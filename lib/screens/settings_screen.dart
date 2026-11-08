@@ -200,11 +200,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('Gestão de Dados', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 16),
 
-                // BACKUP GOOGLE DRIVE
+                // SECÇÃO: BACKUP GOOGLE DRIVE
                 Text('BACKUP GOOGLE DRIVE', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue[700])),
                 const SizedBox(height: 8),
 
-                // 1. Salvar dados (Google Drive)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -225,7 +224,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // 2. Restaurar dados (Google Drive)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -264,7 +262,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // 3. Ativar Backup automático
                 SwitchListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -285,11 +282,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Divider(thickness: 1.5),
                 ),
 
-                // BACKUP LOCAL
+                // SECÇÃO: BACKUP LOCAL
                 Text('BACKUP LOCAL', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.brown[400])),
                 const SizedBox(height: 8),
 
-                // 4. Salvar dados (Local)
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -319,7 +315,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // 5. Restaurar dados (Local) - Com a lógica exata do FilePicker da versão 13
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
