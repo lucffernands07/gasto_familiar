@@ -11,7 +11,6 @@ import '../widgets/month_navigation_bar.dart';
 import '../widgets/terms_dialog.dart';
 import '../widgets/calculadora_dialog.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -234,55 +233,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _abrirCalculadoraRapida(BuildContext context, TextEditingController valorController) {
-    final calcController = TextEditingController(text: valorController.text);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFFAF6EE),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.calculate, color: _isDarkMode ? Colors.white : const Color(0xFF2C3E50)),
-            const SizedBox(width: 8),
-            Text('Calculadora Rápida', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _isDarkMode ? Colors.white : Colors.black87)),
-          ],
-        ),
-        content: TextField(
-          controller: calcController,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
-          decoration: InputDecoration(
-            labelText: 'Digite o valor ou conta',
-            hintText: 'Ex: 50 + 30',
-            labelStyle: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black54),
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final texto = calcController.text.replaceAll(',', '.');
-              final val = double.tryParse(texto) ?? 0.0;
-              if (val > 0) {
-                valorController.text = val.toStringAsFixed(2).replaceFirst('.', ',');
-              }
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4E6F1)),
-            child: const Text('Usar Valor', style: TextStyle(color: Color(0xFF2C3E50))),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _mostrarDialogLancarTransacao(BuildContext context, {String tipoInicial = 'receita'}) async {
     Set<String> categoriasExistentes = {};
     Set<String> descricoesExistentes = {};
@@ -403,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: ['Recebido', 'Pago', 'Pendente'].contains(statusSelecionado) 
+                  value: ['Recebido', 'Pago', 'Pendente', 'Vale'].contains(statusSelecionado) 
                       ? statusSelecionado 
                       : (tipoSelecionado == 'receita' ? 'Recebido' : 'Pago'),
                   dropdownColor: _isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
@@ -417,10 +367,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? const [
                           DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
                           DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                          DropdownMenuItem(value: 'Vale', child: Text('Vale', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
                         ]
                       : const [
                           DropdownMenuItem(value: 'Pago', child: Text('Pago')),
                           DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
+                          DropdownMenuItem(value: 'Vale', child: Text('Vale', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
                         ],
                   onChanged: (val) {
                     if (val != null) setStateDialog(() => statusSelecionado = val);
