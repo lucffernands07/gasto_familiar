@@ -158,7 +158,7 @@ class PlanilhaView extends StatelessWidget {
                     DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
                     DropdownMenuItem(value: 'Pago', child: Text('Pago')),
                     DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                    DropdownMenuItem(value: 'Vale', child: Text('Vale', style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold))),
+                    DropdownMenuItem(value: 'Vale', child: Text('Vale')), // Sem estilo roxo aqui
                   ],
                   onChanged: (val) {
                     if (val != null) setStateDialog(() => statusAtual = val);
@@ -327,12 +327,15 @@ class PlanilhaView extends StatelessWidget {
           children: sortedKeys.map((categoria) {
             final itens = tabelasPorCategoria[categoria]!;
             
+            // ORDENAÇÃO: 1º Pagos/Recebidos, 2º Pendente, 3º Vale
             itens.sort((a, b) {
-              final statusA = a['status'];
-              final statusB = b['status'];
-              if (statusA != 'Pendente' && statusB == 'Pendente') return -1;
-              if (statusA == 'Pendente' && statusB != 'Pendente') return 1;
-              return 0;
+              int peso(String s) {
+                if (s == 'Pago' || s == 'Recebido') return 1;
+                if (s == 'Pendente') return 2;
+                if (s == 'Vale') return 3;
+                return 2;
+              }
+              return peso(a['status']).compareTo(peso(b['status']));
             });
 
             final tipo = tiposPorCategoria[categoria] ?? 'despesa';
@@ -398,12 +401,11 @@ class PlanilhaView extends StatelessWidget {
                   ...itens.map((item) {
                     final status = item['status'];
                     
-                    // Definição da cor do status na tabela (Roxo para 'Vale')
                     Color corStatus;
                     if (status == 'Pago' || status == 'Recebido') {
                       corStatus = Colors.green;
                     } else if (status == 'Vale') {
-                      corStatus = Colors.purple;
+                      corStatus = Colors.purple; // Roxo apenas na tabela
                     } else {
                       corStatus = Colors.red;
                     }
