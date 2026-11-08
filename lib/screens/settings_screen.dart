@@ -319,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // 5. Restaurar dados (Local)
+                // 5. Restaurar dados (Local) - Com a lógica exata do FilePicker da versão 13
                 ListTile(
                   tileColor: cardColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -344,13 +344,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   
-                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                  List<PlatformFile> files = await FilePicker.pickFiles(
                                     type: FileType.custom,
                                     allowedExtensions: ['json'],
                                   );         
 
-                                  if (result != null && result.files.isNotEmpty) {
-                                    PlatformFile file = result.files.first;
+                                  if (files.isNotEmpty) {
+                                    PlatformFile file = files.first;
                                     Uint8List? fileBytes = file.bytes;
 
                                     if (fileBytes != null) {
