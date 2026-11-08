@@ -100855,7 +100855,7 @@ A.bB(r,$.cD(),!0)
 return A.UA(new A.ayD(o,q.a,q.d,q.e,q.f,q.r,q.w),A.mn(new A.cb(r)).bl("families").c5(q.c).bl("transactions").vb(),t.cG)},
 $S:652}
 A.ayD.prototype={
-$2(b4,b5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=this,b=null,a="createdAt",a0="Recebido",a1="Vale",a2=".",a3=",",a4="R$ \u2022\u2022\u2022\u2022\u2022\u2022",a5="(Previsto: R$ \u2022\u2022\u2022\u2022\u2022\u2022)",a6=b5.b,a7=0,a8=0,a9=0,b0=0,b1=0,b2=0,b3=0
+$2(b4,b5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=this,b=null,a="createdAt",a0="Recebido",a1="Pendente",a2=".",a3=",",a4="R$ \u2022\u2022\u2022\u2022\u2022\u2022",a5="(Previsto: R$ \u2022\u2022\u2022\u2022\u2022\u2022)",a6=b5.b,a7=0,a8=0,a9=0,b0=0,b1=0,b2=0,b3=0
 if(a6!=null)for(a6=a6.gi2(),s=a6.length,r=t.a,q=c.b,p=0;p<a6.length;a6.length===s||(0,A.F)(a6),++p){o=a6[p].lh()
 o.toString
 r.a(o)
@@ -100870,14 +100870,13 @@ i=o.h(0,"tipo")
 if(i==null)i="despesa"
 h=o.h(0,"status")
 if(h==null)h=J.d(i,"receita")?a0:"Pago"
-if(J.d(i,"receita")){a9+=j
-o=J.i1(h)
-if(o.j(h,a0))a7+=j
-else if(o.j(h,a1))b2+=j}else{b0+=j
-o=J.i1(h)
-if(o.j(h,"Pago"))a8+=j
-else if(o.j(h,"Pendente"))b1+=j
-else if(o.j(h,a1))b3+=j}}a6=A.ck(28)
+if(J.d(i,"receita")){o=J.i1(h)
+if(o.j(h,a0)){a7+=j
+a9+=j}else if(o.j(h,a1))a9+=j
+else if(o.j(h,"Vale"))b2+=j}else{o=J.i1(h)
+if(o.j(h,"Pago")){a8+=j
+b0+=j}else if(o.j(h,a1)){b1+=j
+b0+=j}else if(o.j(h,"Vale"))b3+=j}}a6=A.ck(28)
 s=A.b([new A.bf(0,B.N,A.ac(20,B.k.t()>>>16&255,B.k.t()>>>8&255,B.k.t()&255),B.fU,15)],t.V)
 r=c.b
 q=A.an("Ol\xe1, "+r.d+"!",2,B.b_,b,A.af(b,b,c.d,b,b,b,b,b,b,b,b,18,b,b,B.I,b,b,!0,b,b,b,b,b,b,b,b),b,b)
@@ -100905,7 +100904,7 @@ e=f.w
 f=f.c?"R$ "+B.c.dP(B.d.a4(a8,2),a2,a3):a4
 f=A.eQ(b,r.RC("Gastos (Pagos)",f,B.kn,B.Lw,r.a.c?"(Previsto: R$ "+B.c.dP(B.d.a4(b0,2),a2,a3)+")":a5),B.H,!1,b,b,b,b,b,b,b,b,b,b,b,b,b,b,e,b,b,b,b,b,b)
 e=A.eQ(b,r.RB("Despesas (A pagar)",r.a.c?"R$ "+B.c.dP(B.d.a4(b1,2),a2,a3):a4,B.p2,B.LH),B.H,!1,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b)
-return A.cA(b,A.d_(A.b([q,B.C6,o,B.eN,m,B.jg,l,B.dP,g,B.dP,f,B.dP,e,B.dP,A.eQ(b,r.acA(a1,r.a.c?"R$ "+B.c.dP(B.d.a4(b2-b3,2),a2,a3):a4,B.mg,b,"20"),B.H,!1,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b)],d),B.aC,b,B.L,B.M),B.p,b,b,new A.bV(b,b,b,a6,s,new A.hG(B.bC,B.e1,B.bK,c.c,b,b),B.a3),b,b,b,B.ah,b,b,1/0)},
+return A.cA(b,A.d_(A.b([q,B.C6,o,B.eN,m,B.jg,l,B.dP,g,B.dP,f,B.dP,e,B.dP,A.eQ(b,r.acA("Vale (Saldo)",r.a.c?"R$ "+B.c.dP(B.d.a4(b2-b3,2),a2,a3):a4,B.mg,b,"20"),B.H,!1,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b)],d),B.aC,b,B.L,B.M),B.p,b,b,new A.bV(b,b,b,a6,s,new A.hG(B.bC,B.e1,B.bK,c.c,b,b),B.a3),b,b,b,B.ah,b,b,1/0)},
 $S:653}
 A.Q4.prototype={
 I(a){var s,r=this,q=null,p=r.d,o=A.an(r.c,q,q,q,A.af(q,q,r.f,q,q,q,q,q,q,q,q,22,q,q,B.I,q,q,!0,q,-0.5,q,q,q,q,q,q),q,q),n=p!=null
