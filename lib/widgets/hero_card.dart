@@ -10,7 +10,8 @@ class HeroCard extends StatefulWidget {
   final VoidCallback? onTapSaldoFamilia;
   final VoidCallback? onTapReceitas;
   final VoidCallback? onTapGastos;
-  final VoidCallback? onTapDespesasPendentes; // Opcional para clique
+  final VoidCallback? onTapDespesasPendentes;
+  final VoidCallback? onTapVale; // Ação ao clicar no card do Vale
 
   const HeroCard({
     super.key,
@@ -21,6 +22,7 @@ class HeroCard extends StatefulWidget {
     this.onTapReceitas,
     this.onTapGastos,
     this.onTapDespesasPendentes,
+    this.onTapVale,
   });
 
   @override
@@ -51,11 +53,9 @@ class _HeroCardState extends State<HeroCard> {
     final familyId = user?.uid ?? 'familia_default';
     final String chaveMes = '${widget.mesSelecionado.year}_${widget.mesSelecionado.month.toString().padLeft(2, '0')}';
 
-    // Verificar se o mês selecionado é o mês atual do sistema
     final agora = DateTime.now();
     final bool ehMesAtual = widget.mesSelecionado.year == agora.year && widget.mesSelecionado.month == agora.month;
 
-    // Definir o gradiente com base no mês
     final List<Color> coresGradiente = ehMesAtual
         ? [const Color(0xFFFFCBDD), const Color(0xFFFFF3E0)]
         : [const Color(0xFF4A4A4A), const Color(0xFF888888)];
@@ -65,10 +65,7 @@ class _HeroCardState extends State<HeroCard> {
     final Color corValorPrincipal = ehMesAtual ? const Color(0xFF222222) : Colors.white;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('families')
-          .doc(familyId)
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('families').doc(familyId).snapshots(),
       builder: (context, familySnapshot) {
         double saldoFamiliaMes = 0.0;
         
@@ -81,17 +78,17 @@ class _HeroCardState extends State<HeroCard> {
         }
 
         return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('families')
-              .doc(familyId)
-              .collection('transactions')
-              .snapshots(),
+          stream: FirebaseFirestore.instance.collection('families').doc(familyId).collection('transactions').snapshots(),
           builder: (context, txSnapshot) {
             double receitasEfetivas = 0.0;
             double gastosEfetivos = 0.0;
             double receitasPrevias = 0.0;
             double gastosPrevios = 0.0;
-            double despesasPendentes = 0.0; // Soma das despesas com status Pendente
+            double despesasPendentes = 0.0;
+            
+            // Variáveis para o cálculo do Vale (Receitas com status Vale - Despesas com status Vale)
+            double receitasVale = 0.0;
+            double gastosVale = 0.0;
 
             if (txSnapshot.hasData) {
               for (var doc in txSnapshot.data!.docs) {
@@ -115,18 +112,24 @@ class _HeroCardState extends State<HeroCard> {
                   receitasPrevias += amount;
                   if (status == 'Recebido') {
                     receitasEfetivas += amount;
+                  } else if (status == 'Vale') {
+                    receitasVale += amount;
                   }
                 } else {
                   gastosPrevios += amount;
                   if (status == 'Pago') {
                     gastosEfetivos += amount;
                   } else if (status == 'Pendente') {
-                    despesasPendentes += amount; // Soma exclusiva das despesas pendentes
+                    despesasPendentes += amount;
+                  } else if (status == 'Vale') {
+                    gastosVale += amount;
                   }
                 }
               }
             }
 
+            // Saldo total do Vale (Receitas Vale - Gastos Vale)
+            final double saldoVale = receitasVale - gastosVale;
             final saldoTotal = receitasEfetivas - gastosEfetivos;
             final saldoPrevio = receitasPrevias - gastosPrevios;
 
@@ -153,48 +156,27 @@ class _HeroCardState extends State<HeroCard> {
                 children: [
                   Text(
                     'Olá, $_greetingName!',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: corTextoPrincipal,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: corTextoPrincipal),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     ehMesAtual ? 'Resumo deste mês' : 'Resumo do mês selecionado',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: corTextoSecundario,
-                    ),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: corTextoSecundario),
                   ),
                   const SizedBox(height: 16),
                   Center(
                     child: Column(
                       children: [
-                        Text(
-                          'Saldos Totais:',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: corTextoSecundario,
-                          ),
-                        ),
+                        Text('Saldos Totais:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: corTextoSecundario)),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              widget.mostrarSaldo
-                                  ? 'R\$ ${saldoTotal.toStringAsFixed(2).replaceFirst('.', ',')}'
-                                  : 'R\$ ••••••',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: corValorPrincipal,
-                              ),
+                              widget.mostrarSaldo ? 'R\$ ${saldoTotal.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: corValorPrincipal),
                             ),
                             const SizedBox(width: 8),
                             GestureDetector(
@@ -212,11 +194,7 @@ class _HeroCardState extends State<HeroCard> {
                           widget.mostrarSaldo
                               ? 'Saldo previsto: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
                               : 'Saldo previsto: R\$ ••••••',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.normal,
-                            color: corTextoSecundario,
-                          ),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: corTextoSecundario),
                         ),
                       ],
                     ),
@@ -261,7 +239,7 @@ class _HeroCardState extends State<HeroCard> {
                   ),
                   const SizedBox(height: 10),
 
-                  // NOVO CARTÃO: Despesas (A pagar) - Soma das despesas pendentes
+                  // Despesas (A pagar)
                   GestureDetector(
                     onTap: widget.onTapDespesasPendentes,
                     child: _buildItemCard(
@@ -269,6 +247,19 @@ class _HeroCardState extends State<HeroCard> {
                       widget.mostrarSaldo ? 'R\$ ${despesasPendentes.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
                       Colors.orange.shade400,
                       Icons.schedule_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // NOVO CARTÃO: VALE (Roxo com o número 20 no ícone)
+                  GestureDetector(
+                    onTap: widget.onTapVale,
+                    child: _buildItemCard(
+                      'Vale',
+                      widget.mostrarSaldo ? 'R\$ ${saldoVale.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      Colors.purple,
+                      null, // Sem ícone padrão, pois usaremos o número 20
+                      customIconText: '20',
                     ),
                   ),
                 ],
@@ -280,7 +271,7 @@ class _HeroCardState extends State<HeroCard> {
     );
   }
 
-  Widget _buildItemCard(String titulo, String valor, Color corIcone, IconData icone, {String? subTextoPrevisto}) {
+  Widget _buildItemCard(String titulo, String valor, Color corIcone, IconData? icone, {String? subTextoPrevisto, String? customIconText}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -297,9 +288,16 @@ class _HeroCardState extends State<HeroCard> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(color: corIcone, shape: BoxShape.circle),
-            child: Icon(icone, color: Colors.white, size: 20),
+            alignment: Alignment.center,
+            child: customIconText != null
+                ? Text(
+                    customIconText,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  )
+                : Icon(icone, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
