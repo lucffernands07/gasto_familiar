@@ -465,4 +465,47 @@ class PlanilhaView extends StatelessWidget {
                             ),
                             Expanded(
                               flex: 2,
-                              
+                              child: Text(
+                                status,
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: corStatus,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFEBE4),
+                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'TOTAL',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                        ),
+                        Text(
+                          mostrarSaldo ? totalCategoria.toStringAsFixed(2).replaceFirst('.', ',') : '•••',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111111)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
