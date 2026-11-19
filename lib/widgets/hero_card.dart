@@ -106,13 +106,16 @@ class _HeroCardState extends State<HeroCard> {
                 final amount = (data['valor'] ?? 0.0).toDouble();
                 final tipo = data['tipo'] ?? 'despesa';
                 final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
+                final bool isVale = (data['isVale'] == true) || (status == 'Vale');
 
                 if (tipo == 'receita') {
                   if (status == 'Recebido') {
                     receitasEfetivas += amount;
                     receitasPrevias += amount;
+                    if (isVale) receitasVale += amount;
                   } else if (status == 'Pendente') {
                     receitasPrevias += amount;
+                    if (isVale) receitasVale += amount;
                   } else if (status == 'Vale') {
                     receitasVale += amount; // Vale fica isolado e não mexe no previsto geral
                   }
@@ -120,9 +123,11 @@ class _HeroCardState extends State<HeroCard> {
                   if (status == 'Pago') {
                     gastosEfetivos += amount;
                     gastosPrevios += amount;
+                    if (isVale) gastosVale += amount;
                   } else if (status == 'Pendente') {
                     despesasPendentes += amount;
                     gastosPrevios += amount;
+                    if (isVale) gastosVale += amount;
                   } else if (status == 'Vale') {
                     gastosVale += amount; // Vale fica isolado e não mexe no previsto geral
                   }
