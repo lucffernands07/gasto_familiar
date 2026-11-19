@@ -252,6 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
     
     String tipoSelecionado = tipoInicial;
     String statusSelecionado = tipoInicial == 'receita' ? 'Recebido' : 'Pago';
+    bool isValeSelecionado = false;
 
     if (!context.mounted) return;
 
@@ -375,7 +376,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           DropdownMenuItem(value: 'Vale', child: Text('Vale')),
                         ],
                   onChanged: (val) {
-                    if (val != null) setStateDialog(() => statusSelecionado = val);
+                    if (val != null) {
+                      setStateDialog(() {
+                        statusSelecionado = val;
+                        if (val == 'Vale') isValeSelecionado = true;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  title: Text(
+                    'Incluir no cálculo de Vale',
+                    style: TextStyle(fontSize: 14, color: _isDarkMode ? Colors.white : Colors.black87),
+                  ),
+                  value: isValeSelecionado,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (val) {
+                    if (val != null) setStateDialog(() => isValeSelecionado = val);
                   },
                 ),
               ],
@@ -429,6 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'valor': valor,
                         'tipo': tipoSelecionado,
                         'status': statusSelecionado,
+                        'isVale': statusSelecionado == 'Vale' ? true : isValeSelecionado,
                         'createdAt': Timestamp.fromDate(dataParaSalvar),
                       });
 
