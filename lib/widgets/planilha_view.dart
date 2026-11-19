@@ -90,6 +90,7 @@ class PlanilhaView extends StatelessWidget {
           'valor': data['valor'] ?? 0.0,
           'tipo': data['tipo'] ?? 'despesa',
           'status': 'Pendente',
+          'isVale': data['isVale'] == true,
           'createdAt': Timestamp.fromDate(novaData),
         });
       }
@@ -116,6 +117,7 @@ class PlanilhaView extends StatelessWidget {
     final valorController = TextEditingController(text: (dadosAtuais['valor'] ?? 0.0).toString().replaceFirst('.', ','));
     final catController = TextEditingController(text: dadosAtuais['categoria'] ?? 'Geral');
     String statusAtual = dadosAtuais['status'] ?? 'Recebido';
+    bool isValeAtual = (dadosAtuais['isVale'] == true) || (statusAtual == 'Vale');
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -158,10 +160,25 @@ class PlanilhaView extends StatelessWidget {
                     DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
                     DropdownMenuItem(value: 'Pago', child: Text('Pago')),
                     DropdownMenuItem(value: 'Pendente', child: Text('Pendente')),
-                    DropdownMenuItem(value: 'Vale', child: Text('Vale')), // Sem estilo roxo aqui
+                    DropdownMenuItem(value: 'Vale', child: Text('Vale')),
                   ],
                   onChanged: (val) {
-                    if (val != null) setStateDialog(() => statusAtual = val);
+                    if (val != null) {
+                      setStateDialog(() {
+                        statusAtual = val;
+                        if (val == 'Vale') isValeAtual = true;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  title: const Text('Incluir no cálculo de Vale', style: TextStyle(fontSize: 14)),
+                  value: isValeAtual,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (val) {
+                    if (val != null) setStateDialog(() => isValeAtual = val);
                   },
                 ),
               ],
@@ -189,6 +206,7 @@ class PlanilhaView extends StatelessWidget {
                     'descricao': novaDesc.isNotEmpty ? novaDesc : 'Transação',
                     'valor': novoValor,
                     'status': statusAtual,
+                    'isVale': statusAtual == 'Vale' ? true : isValeAtual,
                   });
                   await _registrarHistorico('Edição', 'Transação "$novaDesc" atualizada ($novoValor - $statusAtual)');
                   if (context.mounted) Navigator.pop(context);
@@ -298,13 +316,15 @@ class PlanilhaView extends StatelessWidget {
 
           final categoria = data['categoria'] ?? 'Geral';
           final tipo = data['tipo'] ?? 'despesa';
+          final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
 
           tabelasPorCategoria.putIfAbsent(categoria, () => []);
           tabelasPorCategoria[categoria]!.add({
             'id': doc.id,
             'descricao': data['descricao'] ?? '',
             'valor': (data['valor'] ?? 0.0).toDouble(),
-            'status': data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago'),
+            'status': status,
+            'isVale': (data['isVale'] == true) || (status == 'Vale'),
             'tipo': tipo,
           });
           tiposPorCategoria[categoria] = tipo;
@@ -400,12 +420,13 @@ class PlanilhaView extends StatelessWidget {
                   ),
                   ...itens.map((item) {
                     final status = item['status'];
+                    final bool isVale = item['isVale'] == true;
                     
                     Color corStatus;
-                    if (status == 'Pago' || status == 'Recebido') {
+                    if (isVale || status == 'Vale') {
+                      corStatus = Colors.purple; // Roxo para status Vale ou isVale == true
+                    } else if (status == 'Pago' || status == 'Recebido') {
                       corStatus = Colors.green;
-                    } else if (status == 'Vale') {
-                      corStatus = Colors.purple; // Roxo apenas na tabela
                     } else {
                       corStatus = Colors.red;
                     }
@@ -416,6 +437,7 @@ class PlanilhaView extends StatelessWidget {
                         'descricao': item['descricao'],
                         'valor': item['valor'],
                         'status': status,
+                        'isVale': isVale,
                         'tipo': item['tipo'],
                       }),
                       child: Container(
@@ -443,47 +465,4 @@ class PlanilhaView extends StatelessWidget {
                             ),
                             Expanded(
                               flex: 2,
-                              child: Text(
-                                status,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: corStatus,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEFEBE4),
-                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'TOTAL',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                        ),
-                        Text(
-                          mostrarSaldo ? totalCategoria.toStringAsFixed(2).replaceFirst('.', ',') : '•••',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111111)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-}
+                              
