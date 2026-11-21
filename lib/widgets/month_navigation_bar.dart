@@ -31,9 +31,7 @@ class MonthNavigationBar extends StatelessWidget {
         : [const Color(0xFF4A4A4A), const Color(0xFF888888)];
 
     final Color corConteudo = ehMesAtual ? const Color(0xFF333333) : Colors.white;
-    final Color corBorda = ehMesAtual
-        ? const Color(0xFFC7B8B0)
-        : const Color(0xFFB0B0B0);
+    const Color corBorda = Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
