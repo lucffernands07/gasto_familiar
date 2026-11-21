@@ -19,6 +19,52 @@ class PlanilhaView extends StatelessWidget {
     this.onIrParaMesAnterior,
   });
 
+  Widget _buildBotaoCopiar(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => CopiarPlanilhasSheet.abrir(
+          context: context,
+          familyId: familyId,
+          mesSelecionado: mesSelecionado,
+          onIrParaMesAnterior: onIrParaMesAnterior,
+        ),
+        icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF333333)),
+        label: const Text(
+          'Copiar transações do mês anterior',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF333333),
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+
   Future<void> _registrarHistorico(String acao, String detalhes) async {
     final user = FirebaseAuth.instance.currentUser;
     final prefs = await SharedPreferences.getInstance();
@@ -37,10 +83,16 @@ class PlanilhaView extends StatelessWidget {
     });
   }
 
-  void _mostrarDialogEditarTransacao(BuildContext context, String transId, Map<String, dynamic> dadosAtuais) {
+  void _mostrarDialogEditarTransacao(
+    BuildContext context,
+    String transId,
+    Map<String, dynamic> dadosAtuais,
+  ) {
     final db = FirebaseFirestore.instance;
     final descController = TextEditingController(text: dadosAtuais['descricao'] ?? '');
-    final valorController = TextEditingController(text: (dadosAtuais['valor'] ?? 0.0).toString().replaceFirst('.', ','));
+    final valorController = TextEditingController(
+      text: (dadosAtuais['valor'] ?? 0.0).toString().replaceFirst('.', ','),
+    );
     final catController = TextEditingController(text: dadosAtuais['categoria'] ?? 'Geral');
     String statusAtual = dadosAtuais['status'] ?? 'Recebido';
     bool isValeAtual = (dadosAtuais['isVale'] == true) || (statusAtual == 'Vale');
@@ -73,15 +125,39 @@ class PlanilhaView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: catController, decoration: const InputDecoration(labelText: 'Nome da Coluna / Categoria', border: OutlineInputBorder())),
+                TextField(
+                  controller: catController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da Coluna / Categoria',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: descController, decoration: const InputDecoration(labelText: 'Descrição', border: OutlineInputBorder())),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: valorController, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Valor', border: OutlineInputBorder())),
+                TextField(
+                  controller: valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Valor',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: ['Recebido', 'Pago', 'Pendente', 'Vale'].contains(statusAtual) ? statusAtual : 'Recebido',
-                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
+                  value: ['Recebido', 'Pago', 'Pendente', 'Vale'].contains(statusAtual)
+                      ? statusAtual
+                      : 'Recebido',
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    border: OutlineInputBorder(),
+                  ),
                   items: const [
                     DropdownMenuItem(value: 'Recebido', child: Text('Recebido')),
                     DropdownMenuItem(value: 'Pago', child: Text('Pago')),
@@ -114,8 +190,16 @@ class PlanilhaView extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                await db.collection('families').doc(familyId).collection('transactions').doc(transId).delete();
-                await _registrarHistorico('Exclusão', 'Transação "${dadosAtuais['descricao']}" excluída');
+                await db
+                    .collection('families')
+                    .doc(familyId)
+                    .collection('transactions')
+                    .doc(transId)
+                    .delete();
+                await _registrarHistorico(
+                  'Exclusão',
+                  'Transação "${dadosAtuais['descricao']}" excluída',
+                );
               },
               child: const Text('Excluir', style: TextStyle(color: Colors.red)),
             ),
@@ -127,14 +211,22 @@ class PlanilhaView extends StatelessWidget {
                 final novaCat = catController.text.trim();
 
                 if (novoValor > 0) {
-                  await db.collection('families').doc(familyId).collection('transactions').doc(transId).update({
+                  await db
+                      .collection('families')
+                      .doc(familyId)
+                      .collection('transactions')
+                      .doc(transId)
+                      .update({
                     'categoria': novaCat.isNotEmpty ? novaCat : 'Geral',
                     'descricao': novaDesc.isNotEmpty ? novaDesc : 'Transação',
                     'valor': novoValor,
                     'status': statusAtual,
                     'isVale': statusAtual == 'Vale' ? true : isValeAtual,
                   });
-                  await _registrarHistorico('Edição', 'Transação "$novaDesc" atualizada ($novoValor - $statusAtual)');
+                  await _registrarHistorico(
+                    'Edição',
+                    'Transação "$novaDesc" atualizada ($novoValor - $statusAtual)',
+                  );
                   if (context.mounted) Navigator.pop(context);
                 }
               },
@@ -150,7 +242,7 @@ class PlanilhaView extends StatelessWidget {
   Widget _buildCardVazio(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFDF8),
         borderRadius: BorderRadius.circular(20),
@@ -160,49 +252,20 @@ class PlanilhaView extends StatelessWidget {
         children: [
           const Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFF888888)),
           const SizedBox(height: 12),
-          const Text('Nenhuma transação neste mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+          const Text(
+            'Nenhuma transação neste mês',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+          ),
           const SizedBox(height: 6),
-          const Text('Altere o mês no topo ou clique em "+ Lançar".', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Color(0xFF666666))),
+          const Text(
+            'Altere o mês no topo ou clique em "+ Lançar".',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+          ),
           const SizedBox(height: 20),
           const Divider(color: Color(0xFFEFEBE4)),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFCBDD), Color(0xFFFFF3E0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: () => CopiarPlanilhasSheet.abrir(
-                context: context,
-                familyId: familyId,
-                mesSelecionado: mesSelecionado,
-                onIrParaMesAnterior: onIrParaMesAnterior,
-              ),
-              icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF333333)),
-              label: const Text(
-                'Copiar transações do mês anterior',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-          ),
+          const SizedBox(height: 14),
+          _buildBotaoCopiar(context),
         ],
       ),
     );
@@ -231,7 +294,7 @@ class PlanilhaView extends StatelessWidget {
           return _buildCardVazio(context);
         }
 
-        final Map<String, List> tabelasPorCategoria = {};
+        final Map<String, List>> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
         for (var doc in snapshot.data!.docs) {
@@ -245,14 +308,14 @@ class PlanilhaView extends StatelessWidget {
             }
           }
 
-          final categoria = data['categoria'] ?? 'Geral';
-          final tipo = data['tipo'] ?? 'despesa';
-          final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
+          final categoria = (data['categoria'] ?? 'Geral').toString();
+          final tipo = (data['tipo'] ?? 'despesa').toString();
+          final status = (data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago')).toString();
 
           tabelasPorCategoria.putIfAbsent(categoria, () => []);
           tabelasPorCategoria[categoria]!.add({
             'id': doc.id,
-            'descricao': data['descricao'] ?? '',
+            'descricao': (data['descricao'] ?? '').toString(),
             'valor': (data['valor'] ?? 0.0).toDouble(),
             'status': status,
             'isVale': (data['isVale'] == true) || (status == 'Vale'),
@@ -275,166 +338,202 @@ class PlanilhaView extends StatelessWidget {
           });
 
         return Column(
-          children: sortedKeys.map((categoria) {
-            final itens = tabelasPorCategoria[categoria]!;
+          children: [
+            ...sortedKeys.map((categoria) {
+              final itens = tabelasPorCategoria[categoria]!;
 
-            // ORDENAÇÃO: 1º Pagos/Recebidos, 2º Pendente, 3º Vale
-            itens.sort((a, b) {
-              int peso(String s) {
-                if (s == 'Pago' || s == 'Recebido') return 1;
-                if (s == 'Pendente') return 2;
-                if (s == 'Vale') return 3;
-                return 2;
-              }
-              return peso(a['status']).compareTo(peso(b['status']));
-            });
+              itens.sort((a, b) {
+                int peso(String s) {
+                  if (s == 'Pago' || s == 'Recebido') return 1;
+                  if (s == 'Pendente') return 2;
+                  if (s == 'Vale') return 3;
+                  return 2;
+                }
+                return peso(a['status']).compareTo(peso(b['status']));
+              });
 
-            final tipo = tiposPorCategoria[categoria] ?? 'despesa';
-            final isReceita = tipo == 'receita';
+              final tipo = tiposPorCategoria[categoria] ?? 'despesa';
+              final isReceita = tipo == 'receita';
 
-            final Color corHeader = isReceita ? const Color(0xFFA8E6CF) : const Color(0xFFFF8B94);
-            final Color corTextoHeader = isReceita ? const Color(0xFF1B4D3E) : const Color(0xFF5C1D24);
+              final Color corHeader = isReceita ? const Color(0xFFA8E6CF) : const Color(0xFFFF8B94);
+              final Color corTextoHeader = isReceita ? const Color(0xFF1B4D3E) : const Color(0xFF5C1D24);
 
-            double totalCategoria = itens.fold(0.0, (sum, item) => sum + (item['valor'] as double));
+              double totalCategoria = itens.fold(0.0, (sum, item) => sum + (item['valor'] as double));
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFDF8),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white, width: 1.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: corHeader,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFDF8),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white, width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            categoria.toUpperCase(),
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: corTextoHeader, letterSpacing: 0.5),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'VALOR R\$',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: corTextoHeader),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'STATUS',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: corTextoHeader),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ...itens.map((item) {
-                    final status = item['status'];
-                    final bool isVale = item['isVale'] == true;
-
-                    Color corStatus;
-                    if (isVale || status == 'Vale') {
-                      corStatus = Colors.purple; // Roxo para status Vale ou isVale == true
-                    } else if (status == 'Pago' || status == 'Recebido') {
-                      corStatus = Colors.green;
-                    } else {
-                      corStatus = Colors.red;
-                    }
-
-                    return InkWell(
-                      onTap: () => _mostrarDialogEditarTransacao(context, item['id'], {
-                        'categoria': categoria,
-                        'descricao': item['descricao'],
-                        'valor': item['valor'],
-                        'status': status,
-                        'isVale': isVale,
-                        'tipo': item['tipo'],
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                item['descricao'],
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF333333)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: corHeader,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              categoria.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: corTextoHeader,
+                                letterSpacing: 0.5,
                               ),
                             ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                mostrarSaldo ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',') : '•••',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal, color: Color(0xFF222222)),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              'VALOR R\$',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: corTextoHeader,
                               ),
                             ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                status,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: corStatus,
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              'STATUS',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: corTextoHeader,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...itens.map((item) {
+                      final status = item['status'].toString();
+                      final bool isVale = item['isVale'] == true;
+
+                      Color corStatus;
+                      if (isVale || status == 'Vale') {
+                        corStatus = Colors.purple;
+                      } else if (status == 'Pago' || status == 'Recebido') {
+                        corStatus = Colors.green;
+                      } else {
+                        corStatus = Colors.red;
+                      }
+
+                      return InkWell(
+                        onTap: () => _mostrarDialogEditarTransacao(context, item['id'].toString(), {
+                          'categoria': categoria,
+                          'descricao': item['descricao'],
+                          'valor': item['valor'],
+                          'status': status,
+                          'isVale': isVale,
+                          'tipo': item['tipo'],
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: const BoxDecoration(
+                            border: Border(bottom: BorderSide(color: Color(0xFFF4F0E6))),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  item['descricao'].toString(),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF333333),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  mostrarSaldo
+                                      ? (item['valor'] as double).toStringAsFixed(2).replaceFirst('.', ',')
+                                      : '•••',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.normal,
+                                    color: Color(0xFF222222),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  status,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: corStatus,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                      );
+                    }),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEFEBE4),
+                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
                       ),
-                    );
-                  }),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEFEBE4),
-                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'TOTAL',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                          Text(
+                            mostrarSaldo
+                                ? totalCategoria.toStringAsFixed(2).replaceFirst('.', ',')
+                                : '•••',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF111111),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'TOTAL',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
-                        ),
-                        Text(
-                          mostrarSaldo ? totalCategoria.toStringAsFixed(2).replaceFirst('.', ',') : '•••',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111111)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 4),
+            _buildBotaoCopiar(context),
+          ],
         );
       },
     );
