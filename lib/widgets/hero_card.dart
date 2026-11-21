@@ -149,6 +149,10 @@ class _HeroCardState extends State<HeroCard> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white,
+                  width: 1.0,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.08),
