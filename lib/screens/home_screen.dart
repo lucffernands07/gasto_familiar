@@ -154,9 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         familyId: _familyId,
                         mostrarSaldo: _mostrarSaldo,
                         mesSelecionado: _mesSelecionado,
-                        onIrParaMesAnterior: () => _mudarMes(-1),
                       ),
-
                     ],
                   ),
                 ),
