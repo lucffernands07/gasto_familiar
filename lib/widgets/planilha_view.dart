@@ -504,3 +504,8 @@ class PlanilhaView extends StatelessWidget {
               ),
             );
           }).toList(),
+        );
+      },
+    );
+  }
+}
