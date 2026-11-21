@@ -4,6 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CopiarPlanilhasSheet {
+  static String _formatarMes(DateTime data) {
+    final mes = data.month.toString().padLeft(2, '0');
+    return '$mes/${data.year}';
+  }
+
   static Future<void> _registrarHistorico({
     required String familyId,
     required String acao,
@@ -30,7 +35,7 @@ class CopiarPlanilhasSheet {
     required BuildContext context,
     required String familyId,
     required DateTime mesDestino,
-    required Map<String, List> transacoesPorCategoria,
+    required Map<String, List>> transacoesPorCategoria,
     required Set<String> categoriasSelecionadas,
   }) async {
     if (categoriasSelecionadas.isEmpty) {
@@ -80,7 +85,7 @@ class CopiarPlanilhasSheet {
         familyId: familyId,
         acao: 'Cópia',
         detalhes:
-            'Planilhas [${categoriasSelecionadas.join(', ')}] ($totalCopiadas transações) copiadas para ${mesDestino.month}/${mesDestino.year} como Pendentes',
+            'Planilhas [${categoriasSelecionadas.join(', ')}] ($totalCopiadas transações) copiadas para ${_formatarMes(mesDestino)} como Pendentes',
       );
 
       if (context.mounted) {
@@ -111,8 +116,6 @@ class CopiarPlanilhasSheet {
     final DateTime mesDestino = mesSelecionado;
     final DateTime mesAnterior = DateTime(mesSelecionado.year, mesSelecionado.month - 1, 1);
 
-    onIrParaMesAnterior?.call();
-
     try {
       final snapshot = await db
           .collection('families')
@@ -120,7 +123,7 @@ class CopiarPlanilhasSheet {
           .collection('transactions')
           .get();
 
-      final Map<String, List> porCategoria = {};
+      final Map<String, List>> porCategoria = {};
       final Map<String, String> tipoCategoria = {};
 
       for (var doc in snapshot.docs) {
@@ -141,7 +144,11 @@ class CopiarPlanilhasSheet {
       if (porCategoria.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Nenhuma transação encontrada no mês anterior!')),
+            SnackBar(
+              content: Text(
+                'Nenhuma transação encontrada no mês anterior (${_formatarMes(mesAnterior)})!',
+              ),
+            ),
           );
         }
         return;
@@ -208,7 +215,16 @@ class CopiarPlanilhasSheet {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Origem: ${_formatarMes(mesAnterior)}  →  Destino: ${_formatarMes(mesDestino)}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Flexible(
                       child: ListView.separated(
                         shrinkWrap: true,
