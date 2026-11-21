@@ -31,6 +31,9 @@ class MonthNavigationBar extends StatelessWidget {
         : [const Color(0xFF4A4A4A), const Color(0xFF888888)];
 
     final Color corConteudo = ehMesAtual ? const Color(0xFF333333) : Colors.white;
+    final Color corBorda = ehMesAtual
+        ? const Color(0xFFC7B8B0)
+        : const Color(0xFFB0B0B0);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -41,6 +44,10 @@ class MonthNavigationBar extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: corBorda,
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
