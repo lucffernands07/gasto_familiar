@@ -3,17 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'calculadora_dialog.dart';
+import 'copiar_planilhas_sheet.dart';
 
 class PlanilhaView extends StatelessWidget {
   final String familyId;
   final bool mostrarSaldo;
   final DateTime mesSelecionado;
+  final VoidCallback? onIrParaMesAnterior;
 
   const PlanilhaView({
     super.key,
     required this.familyId,
     required this.mostrarSaldo,
     required this.mesSelecionado,
+    this.onIrParaMesAnterior,
   });
 
   Future<void> _registrarHistorico(String acao, String detalhes) async {
@@ -32,83 +35,6 @@ class PlanilhaView extends StatelessWidget {
       'ip': nomeDispositivo,
       'createdAt': FieldValue.serverTimestamp(),
     });
-  }
-
-  Future<void> _copiarTransacoesMesAnterior(BuildContext context) async {
-    final db = FirebaseFirestore.instance;
-    final mesAnterior = DateTime(mesSelecionado.year, mesSelecionado.month - 1, 1);
-
-    try {
-      final snapshot = await db
-          .collection('families')
-          .doc(familyId)
-          .collection('transactions')
-          .get();
-
-      List<QueryDocumentSnapshot> transacoesMesAnterior = [];
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        if (data['createdAt'] != null) {
-          final Timestamp timestamp = data['createdAt'];
-          final DateTime dataTx = timestamp.toDate();
-          if (dataTx.year == mesAnterior.year && dataTx.month == mesAnterior.month) {
-            transacoesMesAnterior.add(doc);
-          }
-        }
-      }
-
-      if (transacoesMesAnterior.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Nenhuma transação encontrada no mês anterior!')),
-          );
-        }
-        return;
-      }
-
-      for (var doc in transacoesMesAnterior) {
-        final data = doc.data() as Map<String, dynamic>;
-        final novaId = db.collection('families').doc(familyId).collection('transactions').doc().id;
-        
-        final agora = DateTime.now();
-        final ultimoDiaDoMesAtual = DateTime(mesSelecionado.year, mesSelecionado.month + 1, 0).day;
-        final diaApropriado = agora.day > ultimoDiaDoMesAtual ? ultimoDiaDoMesAtual : agora.day;
-
-        final novaData = DateTime(
-          mesSelecionado.year,
-          mesSelecionado.month,
-          diaApropriado,
-          agora.hour,
-          agora.minute,
-          agora.second,
-        );
-
-        await db.collection('families').doc(familyId).collection('transactions').doc(novaId).set({
-          'categoria': data['categoria'] ?? 'Geral',
-          'descricao': data['descricao'] ?? '',
-          'valor': data['valor'] ?? 0.0,
-          'tipo': data['tipo'] ?? 'despesa',
-          'status': 'Pendente',
-          'isVale': data['isVale'] == true,
-          'createdAt': Timestamp.fromDate(novaData),
-        });
-      }
-
-      await _registrarHistorico('Cópia', 'Transações do mês anterior copiadas para ${mesSelecionado.month}/${mesSelecionado.year} como Pendentes');
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transações copiadas com sucesso como Pendentes!')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao copiar transações: $e')),
-        );
-      }
-    }
   }
 
   void _mostrarDialogEditarTransacao(BuildContext context, String transId, Map<String, dynamic> dadosAtuais) {
@@ -257,7 +183,12 @@ class PlanilhaView extends StatelessWidget {
               ],
             ),
             child: ElevatedButton.icon(
-              onPressed: () => _copiarTransacoesMesAnterior(context),
+              onPressed: () => CopiarPlanilhasSheet.abrir(
+                context: context,
+                familyId: familyId,
+                mesSelecionado: mesSelecionado,
+                onIrParaMesAnterior: onIrParaMesAnterior,
+              ),
               icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF333333)),
               label: const Text(
                 'Copiar transações do mês anterior',
@@ -305,7 +236,7 @@ class PlanilhaView extends StatelessWidget {
 
         for (var doc in snapshot.data!.docs) {
           final data = doc.data() as Map<String, dynamic>;
-          
+
           if (data['createdAt'] != null) {
             final Timestamp timestamp = data['createdAt'];
             final DateTime dataTx = timestamp.toDate();
@@ -346,7 +277,7 @@ class PlanilhaView extends StatelessWidget {
         return Column(
           children: sortedKeys.map((categoria) {
             final itens = tabelasPorCategoria[categoria]!;
-            
+
             // ORDENAÇÃO: 1º Pagos/Recebidos, 2º Pendente, 3º Vale
             itens.sort((a, b) {
               int peso(String s) {
@@ -421,7 +352,7 @@ class PlanilhaView extends StatelessWidget {
                   ...itens.map((item) {
                     final status = item['status'];
                     final bool isVale = item['isVale'] == true;
-                    
+
                     Color corStatus;
                     if (isVale || status == 'Vale') {
                       corStatus = Colors.purple; // Roxo para status Vale ou isVale == true
