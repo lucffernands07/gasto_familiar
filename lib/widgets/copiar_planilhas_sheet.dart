@@ -35,7 +35,7 @@ class CopiarPlanilhasSheet {
     required BuildContext context,
     required String familyId,
     required DateTime mesDestino,
-    required Map<String, List>> transacoesPorCategoria,
+    required Map<String, List> transacoesPorCategoria,
     required Set<String> categoriasSelecionadas,
   }) async {
     if (categoriasSelecionadas.isEmpty) {
@@ -123,7 +123,7 @@ class CopiarPlanilhasSheet {
           .collection('transactions')
           .get();
 
-      final Map<String, List>> porCategoria = {};
+      final Map<String, List> porCategoria = {};
       final Map<String, String> tipoCategoria = {};
 
       for (var doc in snapshot.docs) {
