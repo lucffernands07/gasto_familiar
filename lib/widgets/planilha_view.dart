@@ -294,7 +294,7 @@ class PlanilhaView extends StatelessWidget {
           return _buildCardVazio(context);
         }
 
-        final Map<String, List>> tabelasPorCategoria = {};
+        final Map<String, List> tabelasPorCategoria = {};
         final Map<String, String> tiposPorCategoria = {};
 
         for (var doc in snapshot.data!.docs) {
