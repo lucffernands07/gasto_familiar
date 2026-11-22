@@ -51,24 +51,32 @@ class _HeroCardState extends State<HeroCard> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final familyId = user?.uid ?? 'familia_default';
-    final String chaveMes = '${widget.mesSelecionado.year}_${widget.mesSelecionado.month.toString().padLeft(2, '0')}';
+    final String chaveMes =
+        '${widget.mesSelecionado.year}_${widget.mesSelecionado.month.toString().padLeft(2, '0')}';
 
     final agora = DateTime.now();
-    final bool ehMesAtual = widget.mesSelecionado.year == agora.year && widget.mesSelecionado.month == agora.month;
+    final bool ehMesAtual = widget.mesSelecionado.year == agora.year &&
+        widget.mesSelecionado.month == agora.month;
 
     final List<Color> coresGradiente = ehMesAtual
         ? [const Color(0xFFFFCBDD), const Color(0xFFFFF3E0)]
         : [const Color(0xFF4A4A4A), const Color(0xFF888888)];
 
-    final Color corTextoSecundario = ehMesAtual ? const Color(0xFF666666) : Colors.white70;
-    final Color corTextoPrincipal = ehMesAtual ? const Color(0xFF333333) : Colors.white;
-    final Color corValorPrincipal = ehMesAtual ? const Color(0xFF222222) : Colors.white;
+    final Color corTextoSecundario =
+        ehMesAtual ? const Color(0xFF666666) : Colors.white70;
+    final Color corTextoPrincipal =
+        ehMesAtual ? const Color(0xFF333333) : Colors.white;
+    final Color corValorPrincipal =
+        ehMesAtual ? const Color(0xFF222222) : Colors.white;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('families').doc(familyId).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('families')
+          .doc(familyId)
+          .snapshots(),
       builder: (context, familySnapshot) {
         double saldoFamiliaMes = 0.0;
-        
+
         if (familySnapshot.hasData && familySnapshot.data!.exists) {
           final data = familySnapshot.data!.data() as Map<String, dynamic>?;
           if (data != null && data['saldosMensais'] != null) {
@@ -78,35 +86,41 @@ class _HeroCardState extends State<HeroCard> {
         }
 
         return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('families').doc(familyId).collection('transactions').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('families')
+              .doc(familyId)
+              .collection('transactions')
+              .snapshots(),
           builder: (context, txSnapshot) {
             double receitasEfetivas = 0.0;
             double gastosEfetivos = 0.0;
             double receitasPrevias = 0.0;
             double gastosPrevios = 0.0;
             double despesasPendentes = 0.0;
-            
+
             double receitasVale = 0.0;
             double gastosVale = 0.0;
 
             if (txSnapshot.hasData) {
               for (var doc in txSnapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
-                
+
                 if (data['createdAt'] != null) {
                   final Timestamp timestamp = data['createdAt'];
                   final DateTime dataTx = timestamp.toDate();
-                  
-                  if (dataTx.year != widget.mesSelecionado.year || 
+
+                  if (dataTx.year != widget.mesSelecionado.year ||
                       dataTx.month != widget.mesSelecionado.month) {
-                    continue; 
+                    continue;
                   }
                 }
 
                 final amount = (data['valor'] ?? 0.0).toDouble();
                 final tipo = data['tipo'] ?? 'despesa';
-                final status = data['status'] ?? (tipo == 'receita' ? 'Recebido' : 'Pago');
-                final bool isVale = (data['isVale'] == true) || (status == 'Vale');
+                final status = data['status'] ??
+                    (tipo == 'receita' ? 'Recebido' : 'Pago');
+                final bool isVale =
+                    (data['isVale'] == true) || (status == 'Vale');
 
                 if (tipo == 'receita') {
                   if (status == 'Recebido') {
@@ -166,33 +180,58 @@ class _HeroCardState extends State<HeroCard> {
                 children: [
                   Text(
                     'Olá, $_greetingName!',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: corTextoPrincipal),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: corTextoPrincipal,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    ehMesAtual ? 'Resumo deste mês' : 'Resumo do mês selecionado',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: corTextoSecundario),
+                    ehMesAtual
+                        ? 'Resumo deste mês'
+                        : 'Resumo do mês selecionado',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: corTextoSecundario,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Center(
                     child: Column(
                       children: [
-                        Text('Saldos Totais:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: corTextoSecundario)),
+                        Text(
+                          'Saldos Totais:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: corTextoSecundario,
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              widget.mostrarSaldo ? 'R\$ ${saldoTotal.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
-                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: corValorPrincipal),
+                              widget.mostrarSaldo
+                                  ? 'R\$ ${saldoTotal.toStringAsFixed(2).replaceFirst('.', ',')}'
+                                  : 'R\$ ••••••',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: corValorPrincipal,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             GestureDetector(
                               onTap: widget.onToggleVisibility,
                               child: Icon(
-                                widget.mostrarSaldo ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                widget.mostrarSaldo
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
                                 size: 22,
                                 color: corTextoSecundario,
                               ),
@@ -204,44 +243,58 @@ class _HeroCardState extends State<HeroCard> {
                           widget.mostrarSaldo
                               ? 'Saldo previsto: R\$ ${saldoPrevio.toStringAsFixed(2).replaceFirst('.', ',')}'
                               : 'Saldo previsto: R\$ ••••••',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: corTextoSecundario),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                            color: corTextoSecundario,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   GestureDetector(
                     onTap: widget.onTapSaldoFamilia,
                     child: _buildItemCard(
                       'Saldo Família',
-                      widget.mostrarSaldo ? 'R\$ ${saldoFamiliaMes.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      widget.mostrarSaldo
+                          ? 'R\$ ${saldoFamiliaMes.toStringAsFixed(2).replaceFirst('.', ',')}'
+                          : 'R\$ ••••••',
                       const Color(0xFF80DEEA),
                       Icons.people_outline,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  
+
                   GestureDetector(
                     onTap: widget.onTapReceitas,
                     child: _buildItemCard(
                       'Receitas (Recebidas)',
-                      widget.mostrarSaldo ? 'R\$ ${receitasEfetivas.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      widget.mostrarSaldo
+                          ? 'R\$ ${receitasEfetivas.toStringAsFixed(2).replaceFirst('.', ',')}'
+                          : 'R\$ ••••••',
                       const Color(0xFFA8E6CF),
                       Icons.arrow_upward_rounded,
-                      subTextoPrevisto: widget.mostrarSaldo ? '(Previsto: R\$ ${receitasPrevias.toStringAsFixed(2).replaceFirst('.', ',')})' : '(Previsto: R\$ ••••••)',
+                      subTextoPrevisto: widget.mostrarSaldo
+                          ? '(Previsto: R\$ ${receitasPrevias.toStringAsFixed(2).replaceFirst('.', ',')})'
+                          : '(Previsto: R\$ ••••••)',
                     ),
                   ),
                   const SizedBox(height: 10),
-                  
+
                   GestureDetector(
                     onTap: widget.onTapGastos,
                     child: _buildItemCard(
                       'Gastos (Pagos)',
-                      widget.mostrarSaldo ? 'R\$ ${gastosEfetivos.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      widget.mostrarSaldo
+                          ? 'R\$ ${gastosEfetivos.toStringAsFixed(2).replaceFirst('.', ',')}'
+                          : 'R\$ ••••••',
                       const Color(0xFFFF8B94),
                       Icons.arrow_downward_rounded,
-                      subTextoPrevisto: widget.mostrarSaldo ? '(Previsto: R\$ ${gastosPrevios.toStringAsFixed(2).replaceFirst('.', ',')})' : '(Previsto: R\$ ••••••)',
+                      subTextoPrevisto: widget.mostrarSaldo
+                          ? '(Previsto: R\$ ${gastosPrevios.toStringAsFixed(2).replaceFirst('.', ',')})'
+                          : '(Previsto: R\$ ••••••)',
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -250,7 +303,9 @@ class _HeroCardState extends State<HeroCard> {
                     onTap: widget.onTapDespesasPendentes,
                     child: _buildItemCard(
                       'Despesas (A pagar)',
-                      widget.mostrarSaldo ? 'R\$ ${despesasPendentes.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      widget.mostrarSaldo
+                          ? 'R\$ ${despesasPendentes.toStringAsFixed(2).replaceFirst('.', ',')}'
+                          : 'R\$ ••••••',
                       Colors.orange.shade400,
                       Icons.schedule_rounded,
                     ),
@@ -262,7 +317,9 @@ class _HeroCardState extends State<HeroCard> {
                     onTap: widget.onTapVale,
                     child: _buildItemCard(
                       'Vale (Saldo)',
-                      widget.mostrarSaldo ? 'R\$ ${saldoVale.toStringAsFixed(2).replaceFirst('.', ',')}' : 'R\$ ••••••',
+                      widget.mostrarSaldo
+                          ? 'R\$ ${saldoVale.toStringAsFixed(2).replaceFirst('.', ',')}'
+                          : 'R\$ ••••••',
                       Colors.purple,
                       null,
                       customIconText: '20',
@@ -277,7 +334,14 @@ class _HeroCardState extends State<HeroCard> {
     );
   }
 
-  Widget _buildItemCard(String titulo, String valor, Color corIcone, IconData? icone, {String? subTextoPrevisto, String? customIconText}) {
+  Widget _buildItemCard(
+    String titulo,
+    String valor,
+    Color corIcone,
+    IconData? icone, {
+    String? subTextoPrevisto,
+    String? customIconText,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -301,7 +365,11 @@ class _HeroCardState extends State<HeroCard> {
             child: customIconText != null
                 ? Text(
                     customIconText,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   )
                 : Icon(icone, color: Colors.white, size: 20),
           ),
@@ -310,16 +378,39 @@ class _HeroCardState extends State<HeroCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(titulo, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF555555))),
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF555555),
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Text(valor, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF222222))),
+                    Text(
+                      valor,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF222222),
+                      ),
+                    ),
                     if (subTextoPrevisto != null) ...[
                       const SizedBox(width: 6),
-                      Text(
-                        subTextoPrevisto,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Color(0xFF777777)),
+                      Flexible(
+                        child: Text(
+                          subTextoPrevisto,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.normal,
+                            color: Color(0xFF777777),
+                          ),
+                        ),
                       ),
                     ],
                   ],

@@ -1,2 +1,11 @@
 # Google App Engine generated folder
 appengine-generated/
+
+# Flutter / Android / IDE / logs locais
+build/
+android/build/
+.dart_tool/
+.flutter-plugins-dependencies
+.idea/
+*.iml
+*.log
