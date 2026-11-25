@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.gasto_familiar"
+    namespace = "app.gastofamiliar.labseven"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -17,7 +17,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.gasto_familiar"
+        applicationId = "app.gastofamiliar.labseven"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
